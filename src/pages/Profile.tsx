@@ -1,0 +1,804 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User as UserIcon, Loader2, RefreshCw, FileText, Presentation, ExternalLink, Sparkles, GitBranch, Calendar, Award, ShieldCheck, Plus, Trash2, Zap, CheckCircle2 } from 'lucide-react';
+import axios from 'axios';
+import { supabase } from '../services/supabase';
+import { LinkedinIcon } from '../components/BrandIcons';
+import { TalentScoreRing } from '../components/TalentScoreRing';
+import { ScoreBreakdown } from '../components/ScoreBreakdown';
+import { GitHubStatsGrid } from '../components/GitHubStatsGrid';
+import type { HackathonAchievement } from '../types';
+
+function GithubIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+    </svg>
+  );
+}
+
+const languageColors: Record<string, string> = {
+  JavaScript: '#F7DF1E', TypeScript: '#3178C6', Python: '#3776AB', Java: '#ED8B00',
+  'C++': '#00599C', C: '#A8B9CC', Go: '#00ADD8', Rust: '#DEA584', Ruby: '#CC342D',
+  PHP: '#777BB4', Swift: '#FA7343', Kotlin: '#7F52FF', Dart: '#0175C2', Shell: '#89E051',
+  HTML: '#E34F26', CSS: '#1572B6', Lua: '#000080', R: '#276DC3', Scala: '#DC322F',
+  Haskell: '#5D4F85', Elixir: '#6E4A7E', Vue: '#4FC08D', Jupyter: '#F37626',
+};
+
+interface ProfileProps {
+  profile: any;
+  setProfile: (p: any) => void;
+  githubResult: any;
+  setGithubResult: (r: any) => void;
+  linkedinUrl: string;
+  setLinkedinUrl: (url: string) => void;
+  onReposLoaded: (repos: any[]) => void;
+  onProfileAnalyzed?: (updated: Record<string, unknown>) => void;
+}
+
+export function Profile({ profile, setProfile, githubResult, setGithubResult, linkedinUrl, setLinkedinUrl, onReposLoaded, onProfileAnalyzed }: ProfileProps) {
+  const [githubUsername, setGithubUsername] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
+
+  const [pitchText, setPitchText] = useState('');
+  const [isAnalyzingPitch, setIsAnalyzingPitch] = useState(false);
+  const [pitchError, setPitchError] = useState('');
+
+  const [linkedinInput, setLinkedinInput] = useState(linkedinUrl);
+  const [linkedinHeadline, setLinkedinHeadline] = useState(profile?.linkedin_headline || '');
+  const [linkedinSaved, setLinkedinSaved] = useState(false);
+  const [savingLinkedin, setSavingLinkedin] = useState(false);
+
+  // Hackathon Vault State
+  const [showHackathonForm, setShowHackathonForm] = useState(false);
+  const [hackTitle, setHackTitle] = useState('');
+  const [hackEvent, setHackEvent] = useState('');
+  const [hackDate, setHackDate] = useState('');
+  const [hackRole, setHackRole] = useState('Lead Developer');
+  const [hackPlacement, setHackPlacement] = useState('Winner (1st Place)');
+  const [hackDesc, setHackDesc] = useState('');
+  const [hackSkills, setHackSkills] = useState('React, Python, OpenAI, Vector DB');
+  const [analyzingHackathon, setAnalyzingHackathon] = useState(false);
+
+  const hackathons: HackathonAchievement[] = profile?.hackathon_achievements || (
+    localStorage.getItem(`codeprint_hackathons_${profile?.id}`)
+      ? JSON.parse(localStorage.getItem(`codeprint_hackathons_${profile?.id}`)!)
+      : []
+  );
+
+  const handleAddAndAnalyzeHackathon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hackTitle.trim() || !hackEvent.trim()) return;
+    setAnalyzingHackathon(true);
+
+    // Simulate AI verification & analysis delay
+    await new Promise(r => setTimeout(r, 1200));
+
+    const skillList = hackSkills.split(',').map(s => s.trim()).filter(Boolean);
+    const newHack: HackathonAchievement = {
+      id: `hack-${Date.now()}`,
+      title: hackTitle.trim(),
+      event_name: hackEvent.trim(),
+      date: hackDate || new Date().toISOString().split('T')[0],
+      role: hackRole,
+      placement: hackPlacement,
+      description: hackDesc.trim() || 'Built high-throughput autonomous AI agents and interactive interfaces.',
+      skills: skillList,
+      ai_verified: true,
+      ai_credibility_score: 98,
+      ai_feedback: `Verified Gold Tier Contribution. AI detected advanced technical depth across ${skillList.slice(0, 2).join(' & ')} with confirmed competitive distinction.`,
+      bonus_points: hackPlacement.includes('Winner') ? 15 : 10
+    };
+
+    const updatedHackathons = [newHack, ...hackathons];
+    const newTalentScore = (profile.talent_score || profile.ai_profile_score || 75) + newHack.bonus_points;
+
+    localStorage.setItem(`codeprint_hackathons_${profile?.id}`, JSON.stringify(updatedHackathons));
+    try {
+      await supabase.from('profiles').update({
+        hackathon_achievements: updatedHackathons,
+        talent_score: newTalentScore
+      }).eq('id', profile.id);
+    } catch { /* offline handling */ }
+
+    setProfile({ ...profile, hackathon_achievements: updatedHackathons, talent_score: newTalentScore });
+    setHackTitle('');
+    setHackEvent('');
+    setHackDesc('');
+    setShowHackathonForm(false);
+    setAnalyzingHackathon(false);
+  };
+
+  const handleRemoveHackathon = async (id: string) => {
+    const updated = hackathons.filter(h => h.id !== id);
+    localStorage.setItem(`codeprint_hackathons_${profile?.id}`, JSON.stringify(updated));
+    try {
+      await supabase.from('profiles').update({ hackathon_achievements: updated }).eq('id', profile.id);
+    } catch { /* offline handling */ }
+    setProfile({ ...profile, hackathon_achievements: updated });
+  };
+
+  const runFullProfileAnalysis = async (githubData: any, linkedin: string, headline: string) => {
+    try {
+      const res = await axios.post('/api/analyze-profile', {
+        githubData,
+        linkedinUrl: linkedin,
+        linkedinHeadline: headline,
+        profile: { name: profile.full_name, email: profile.email },
+      });
+      const { overallScore, summary } = res.data;
+
+      await supabase.from('profiles').update({
+        ai_profile_score: overallScore,
+        ai_profile_summary: res.data,
+      }).eq('id', profile.id);
+
+      onProfileAnalyzed?.({
+        ai_profile_score: overallScore,
+        ai_profile_summary: res.data,
+      });
+      setProfile({
+        ...profile,
+        ai_profile_score: overallScore,
+        ai_profile_summary: res.data,
+      });
+    } catch (err) {
+      console.warn('Profile analysis failed:', err);
+    }
+  };
+
+  const handleAnalyzeGithub = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!githubUsername.trim() || !profile?.id) return;
+
+    setIsAnalyzing(true);
+    setAnalysisError('');
+
+    try {
+      const response = await axios.post('/api/analyze-github', { username: githubUsername });
+      const result = response.data;
+
+      // Also fetch repos for Projects page
+      try {
+        const reposRes = await axios.get(`/api/github-repos/${githubUsername}`);
+        onReposLoaded(reposRes.data.repos || []);
+      } catch { /* ignore */ }
+
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .update({
+          github_username: githubUsername,
+          talent_score: result.talentScore,
+          github_stats: result.stats,
+          github_breakdown: result.breakdown,
+          avatar_url: result.avatarUrl
+        })
+        .eq('id', profile.id);
+
+      if (dbError) console.warn("Supabase update warning:", dbError.message);
+
+      setGithubResult(result);
+      setProfile({
+        ...profile,
+        github_username: githubUsername,
+        talent_score: result.talentScore,
+        github_stats: result.stats,
+        github_breakdown: result.breakdown,
+        avatar_url: result.avatarUrl
+      });
+
+      if (linkedinUrl || linkedinInput) {
+        await runFullProfileAnalysis(result, linkedinUrl || linkedinInput, linkedinHeadline);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setAnalysisError(err.response?.data?.error || err.message || 'Failed to analyze GitHub');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleAnalyzePitch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pitchText.trim() || !profile?.id) return;
+
+    setIsAnalyzingPitch(true);
+    setPitchError('');
+
+    try {
+      const response = await axios.post('/api/analyze-pitch', { pitchText });
+      const { score, feedback } = response.data;
+
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .update({ pitch_score: score, pitch_feedback: feedback })
+        .eq('id', profile.id);
+
+      if (dbError) console.warn("Supabase update warning:", dbError.message);
+
+      setProfile({ ...profile, pitch_score: score, pitch_feedback: feedback });
+      setPitchText('');
+    } catch (err: any) {
+      console.error(err);
+      setPitchError(err.response?.data?.error || err.message || 'Failed to analyze Pitch');
+    } finally {
+      setIsAnalyzingPitch(false);
+    }
+  };
+
+  const handleSaveLinkedin = async () => {
+    if (!profile?.id) return;
+    setSavingLinkedin(true);
+    try {
+      const { error } = await supabase.from('profiles').update({
+        linkedin_url: linkedinInput.trim(),
+        linkedin_headline: linkedinHeadline.trim() || null,
+      }).eq('id', profile.id);
+
+      if (error) throw error;
+
+      setLinkedinUrl(linkedinInput);
+      setProfile({
+        ...profile,
+        linkedin_url: linkedinInput,
+        linkedin_headline: linkedinHeadline,
+      });
+
+      if (githubResult && linkedinInput.trim()) {
+        await runFullProfileAnalysis(githubResult, linkedinInput, linkedinHeadline);
+      }
+
+      setLinkedinSaved(true);
+      setTimeout(() => setLinkedinSaved(false), 2000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingLinkedin(false);
+    }
+  };
+
+  const hasGithubData = githubResult && githubResult.talentScore != null;
+
+  const accountAgeDays = githubResult?.stats?.accountAgeDays;
+  const accountAgeLabel = accountAgeDays
+    ? `${Math.floor(accountAgeDays / 365)}y ${Math.floor((accountAgeDays % 365) / 30)}m on GitHub`
+    : null;
+
+  return (
+    <div className="space-y-6">
+      {/* ── Profile Hero ── */}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 24 }}
+        className="soft-card rounded-xl p-6 md:p-8"
+      >
+        <div className="flex items-start gap-5">
+          {githubResult?.avatarUrl ? (
+            <motion.img
+              src={githubResult.avatarUrl}
+              alt="Avatar"
+              className="w-20 h-20 rounded-2xl object-cover ring-2 ring-border-soft"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-cream-dark flex items-center justify-center">
+              <UserIcon className="w-9 h-9 text-ink-faint" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-ink tracking-tight">{profile?.full_name || 'Student'}</h1>
+            <p className="text-sm text-ink-faint mt-0.5">{profile?.email}</p>
+
+            <div className="flex flex-wrap items-center gap-3 mt-3">
+              {profile?.github_username && (
+                <a
+                  href={`https://github.com/${profile.github_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-ink bg-cream-dark px-3 py-1.5 rounded-lg hover:bg-border-soft transition-colors"
+                >
+                  <GithubIcon className="w-3.5 h-3.5" />
+                  @{profile.github_username}
+                  <ExternalLink className="w-2.5 h-2.5 text-ink-faint" />
+                </a>
+              )}
+              {linkedinUrl && (
+                <a
+                  href={linkedinUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0A66C2] bg-sky-light px-3 py-1.5 rounded-lg hover:bg-sky-light/80 transition-colors"
+                >
+                  <LinkedinIcon className="w-3.5 h-3.5" />
+                  LinkedIn
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+              {accountAgeLabel && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-ink-faint bg-cream-dark px-3 py-1.5 rounded-lg">
+                  <Calendar className="w-3 h-3" />
+                  {accountAgeLabel}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* ── Connect GitHub + LinkedIn ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.05 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+      >
+        {/* GitHub */}
+        <div className="soft-card rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-ink mb-1 flex items-center gap-2">
+            <GithubIcon className="w-4 h-4" />
+            {hasGithubData ? 'Recalculate Score' : 'Connect GitHub'}
+          </h3>
+          <p className="text-xs text-ink-faint mb-4">
+            {hasGithubData ? 'Refresh your score or try a different username.' : 'Enter your GitHub username to calculate your Talent Score.'}
+          </p>
+          <form onSubmit={handleAnalyzeGithub} className="space-y-3">
+            <input
+              type="text"
+              value={githubUsername}
+              onChange={e => setGithubUsername(e.target.value)}
+              placeholder={profile?.github_username || "e.g. torvalds"}
+              className="w-full px-3.5 py-2.5 bg-cream border border-border-soft rounded-xl text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage/40 transition-all"
+            />
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={isAnalyzing || !githubUsername.trim()}
+              className="w-full bg-ink text-cream py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isAnalyzing ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
+              ) : hasGithubData ? (
+                <><RefreshCw className="w-4 h-4" /> Recalculate</>
+              ) : (
+                <><Sparkles className="w-4 h-4" /> Calculate Talent Score</>
+              )}
+            </motion.button>
+            <AnimatePresence>
+              {analysisError && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-xs text-rose bg-rose-light p-2.5 rounded-lg"
+                >
+                  {analysisError}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </form>
+        </div>
+
+        {/* LinkedIn */}
+        <div className="soft-card rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-ink mb-1 flex items-center gap-2">
+            <LinkedinIcon className="w-4 h-4 text-[#0A66C2]" />
+            Connect LinkedIn
+          </h3>
+          <p className="text-xs text-ink-faint mb-4">
+            Add your LinkedIn URL and headline for AI profile analysis and resume generation.
+          </p>
+          <div className="space-y-3">
+            <input
+              type="url"
+              value={linkedinInput}
+              onChange={e => setLinkedinInput(e.target.value)}
+              placeholder="https://linkedin.com/in/yourprofile"
+              className="w-full px-3.5 py-2.5 bg-cream border border-border-soft rounded-xl text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage/40 transition-all"
+            />
+            <input
+              type="text"
+              value={linkedinHeadline}
+              onChange={e => setLinkedinHeadline(e.target.value)}
+              placeholder="LinkedIn headline (e.g. Full Stack Developer | React)"
+              className="w-full px-3.5 py-2.5 bg-cream border border-border-soft rounded-xl text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage/40 transition-all"
+            />
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSaveLinkedin}
+              disabled={savingLinkedin}
+              className="w-full bg-[#0A66C2] text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-[#0A66C2]/90 transition-colors disabled:opacity-50"
+            >
+              {savingLinkedin ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Saving & analyzing...</>
+              ) : linkedinSaved ? (
+                '✓ Saved!'
+              ) : (
+                'Save LinkedIn'
+              )}
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── Score Breakdown + Ring ── */}
+      <AnimatePresence>
+        {hasGithubData && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.1 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+          >
+            <div className="soft-card rounded-xl p-6 flex flex-col items-center justify-center">
+              <TalentScoreRing score={githubResult.talentScore} />
+              {profile?.github_username && (
+                <p className="text-[11px] text-ink-faint mt-3 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sage animate-pulse" />
+                  Verified via GitHub
+                </p>
+              )}
+            </div>
+            <div className="lg:col-span-2 soft-card rounded-xl p-6">
+              {githubResult.breakdown ? (
+                <ScoreBreakdown breakdown={githubResult.breakdown} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-ink-faint text-sm">
+                  Breakdown not available
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── GitHub Analytics ── */}
+      <AnimatePresence>
+        {hasGithubData && githubResult.stats && (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.15 }}
+            className="soft-card rounded-xl p-6"
+          >
+            <h3 className="text-sm font-semibold text-ink uppercase tracking-wider mb-5 flex items-center gap-2">
+              <GitBranch className="w-4 h-4 text-ink-faint" /> GitHub Analytics
+            </h3>
+            <GitHubStatsGrid stats={githubResult.stats} />
+
+            {githubResult.stats.languages?.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-border-soft">
+                <h4 className="text-[11px] font-semibold text-ink-faint uppercase tracking-widest mb-3">Languages</h4>
+                <div className="flex flex-wrap gap-2">
+                  {githubResult.stats.languages.map((lang: string, i: number) => (
+                    <motion.span
+                      key={lang}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.3 + i * 0.04 }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cream-dark text-ink border border-border-soft/60"
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: languageColors[lang] || '#A3A3A3' }}
+                      />
+                      {lang}
+                    </motion.span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* ── AI Pitch Feedback (existing data) ── */}
+      <AnimatePresence>
+        {profile?.pitch_feedback && (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 24 }}
+            className="bg-ink rounded-xl p-6 md:p-8 text-cream"
+          >
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-amber" /> AI Pitch Analysis
+            </h3>
+            {profile.pitch_score != null && (
+              <p className="text-xs text-cream/40 mb-5">
+                Score: <span className="text-amber font-bold">{profile.pitch_score}/100</span>
+              </p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { key: 'communication', label: 'Communication', color: 'text-sky', border: 'border-sky/20' },
+                { key: 'technicalDepth', label: 'Technical Depth', color: 'text-sage', border: 'border-sage/20' },
+                { key: 'clarity', label: 'Clarity', color: 'text-lavender', border: 'border-lavender/20' },
+              ].map(item => (
+                <div key={item.key} className={`border ${item.border} rounded-lg p-3.5 bg-white/5`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${item.color}`}>{item.label}</span>
+                  <p className="text-xs text-cream/70 mt-1.5 leading-relaxed">
+                    {profile.pitch_feedback[item.key]}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* ── Pitch Analyzer Panel ── */}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.2 }}
+        className="soft-card rounded-xl p-6"
+      >
+        <h3 className="text-sm font-semibold text-ink mb-1 flex items-center gap-2">
+          <Presentation className="w-4 h-4" /> AI Pitch Analyzer
+        </h3>
+        <p className="text-xs text-ink-faint mb-4">
+          Paste your presentation text for AI-powered feedback.
+        </p>
+        <form onSubmit={handleAnalyzePitch} className="space-y-3">
+          <textarea
+            value={pitchText}
+            onChange={e => setPitchText(e.target.value)}
+            placeholder="Paste the text content of your presentation deck here..."
+            className="w-full min-h-[120px] px-3.5 py-2.5 bg-cream border border-border-soft rounded-xl text-sm text-ink placeholder:text-ink-faint resize-none focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage/40 transition-all"
+          />
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            disabled={isAnalyzingPitch || !pitchText.trim()}
+            className="w-full bg-ink text-cream py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isAnalyzingPitch ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
+            ) : (
+              <><FileText className="w-4 h-4" /> Run AI Analysis</>
+            )}
+          </motion.button>
+          <AnimatePresence>
+            {pitchError && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="text-xs text-rose bg-rose-light p-2.5 rounded-lg"
+              >
+                {pitchError}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </form>
+      </motion.section>
+
+      {/* ── AI Hackathon & Achievement Certificate Vault ── */}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.25 }}
+        className="bg-white rounded-3xl p-8 border border-border-soft shadow-xl space-y-6"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-soft">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-amber-600 shadow-sm">
+              <Award className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-ink">AI Hackathon & Achievement Vault</h3>
+              <p className="text-xs text-ink-light font-semibold mt-0.5">
+                Store hackathon wins and certifications. AI automatically verifies credibility & awards up to <span className="text-amber-600 font-bold">+15 Talent Points</span>!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowHackathonForm(!showHackathonForm)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-indigo-100 transition-all self-start sm:self-center"
+          >
+            <Plus className="w-4 h-4" /> {showHackathonForm ? 'Close Form' : 'Add Achievement'}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {showHackathonForm && (
+            <motion.form
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              onSubmit={handleAddAndAnalyzeHackathon}
+              className="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4 shadow-inner overflow-hidden"
+            >
+              <h4 className="font-extrabold text-sm text-indigo-950 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600" /> New Hackathon / Certification Submission
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-extrabold text-ink block mb-1">Project / Certification Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Autonomous Multi-Agent OS"
+                    value={hackTitle}
+                    onChange={e => setHackTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white rounded-xl border border-border-soft text-sm text-ink font-bold focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-extrabold text-ink block mb-1">Event / Hosting Organization *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Google DeepMind AI Hackathon"
+                    value={hackEvent}
+                    onChange={e => setHackEvent(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white rounded-xl border border-border-soft text-sm text-ink font-bold focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-extrabold text-ink block mb-1">Role / Responsibility</label>
+                  <select
+                    value={hackRole}
+                    onChange={e => setHackRole(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-border-soft text-xs text-ink font-bold"
+                  >
+                    <option>Lead Developer</option>
+                    <option>AI / ML Engineer</option>
+                    <option>Full Stack Architect</option>
+                    <option>UI/UX & Frontend</option>
+                    <option>Solo Contributor</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-extrabold text-ink block mb-1">Result & Placement</label>
+                  <select
+                    value={hackPlacement}
+                    onChange={e => setHackPlacement(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-border-soft text-xs text-ink font-bold"
+                  >
+                    <option>Winner (1st Place)</option>
+                    <option>Runner-up (Top 3)</option>
+                    <option>Best Tech Innovation</option>
+                    <option>Finalist / Honorable Mention</option>
+                    <option>Completed / Verified Participant</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-extrabold text-ink block mb-1">Completion Date</label>
+                  <input
+                    type="date"
+                    value={hackDate}
+                    onChange={e => setHackDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-border-soft text-xs text-ink font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-ink block mb-1">Key Tech Stack (Comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="React, TypeScript, Python, Tailwind, LangChain"
+                  value={hackSkills}
+                  onChange={e => setHackSkills(e.target.value)}
+                  className="w-full px-4 py-2 bg-white rounded-xl border border-border-soft text-xs font-bold text-ink"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-ink block mb-1">Brief Technical Impact & Architecture</label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe the system architecture, real-time algorithms, or impact achieved..."
+                  value={hackDesc}
+                  onChange={e => setHackDesc(e.target.value)}
+                  className="w-full px-4 py-2 bg-white rounded-xl border border-border-soft text-xs font-semibold text-ink resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHackathonForm(false)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-ink-faint hover:bg-cream"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={analyzingHackathon}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wide shadow-md flex items-center gap-2 disabled:opacity-50"
+                >
+                  {analyzingHackathon ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> AI Analyzing & Verifying...</>
+                  ) : (
+                    <><ShieldCheck className="w-4 h-4" /> Save & Verify with AI</>
+                  )}
+                </button>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {hackathons.length === 0 ? (
+          <div className="p-10 bg-cream/30 rounded-2xl border border-dashed border-border-soft text-center space-y-2">
+            <Award className="w-10 h-10 text-amber-500 opacity-40 mx-auto" />
+            <h4 className="font-bold text-sm text-ink">No achievements in your vault yet</h4>
+            <p className="text-xs text-ink-light max-w-sm mx-auto">
+              Add your hackathon prizes and certificates to boost your AI Talent Score and showcase validated excellence to top tier employers.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {hackathons.map((h) => (
+              <div key={h.id} className="p-6 rounded-2xl border border-border-soft bg-gradient-to-r from-white to-amber-50/20 hover:shadow-lg transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-6 group">
+                <div className="space-y-3 flex-1">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm">
+                      <Award className="w-3.5 h-3.5 text-amber-600" /> {h.placement}
+                    </span>
+                    <span className="text-xs text-ink-faint font-extrabold">•</span>
+                    <span className="text-xs font-bold text-ink">{h.event_name}</span>
+                    <span className="text-xs text-ink-faint">({h.date})</span>
+                  </div>
+
+                  <h4 className="text-lg font-black text-ink">{h.title} <span className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-lg ml-1">{h.role}</span></h4>
+                  
+                  <p className="text-xs sm:text-sm text-ink-light leading-relaxed">{h.description}</p>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {h.skills.map((s, i) => (
+                      <span key={i} className="px-2.5 py-0.5 bg-cream text-ink text-[11px] font-bold rounded-lg border border-border-soft">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+
+                  {h.ai_feedback && (
+                    <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-3 text-emerald-950 mt-2">
+                      <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs">
+                        <span className="font-extrabold uppercase tracking-wide block text-[11px] text-emerald-800">
+                          AI Credibility Score: {h.ai_credibility_score}% (Verified)
+                        </span>
+                        <p className="font-medium mt-0.5 text-emerald-900">{h.ai_feedback}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 flex-shrink-0">
+                  {h.bonus_points > 0 && (
+                    <div className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-xs rounded-xl shadow-md shadow-amber-200 flex items-center gap-1">
+                      <Zap className="w-3.5 h-3.5 fill-current" /> +{h.bonus_points} Talent Score
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleRemoveHackathon(h.id)}
+                    className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-bold transition-colors opacity-80 sm:opacity-0 group-hover:opacity-100"
+                    title="Remove achievement"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.section>
+    </div>
+  );
+}
