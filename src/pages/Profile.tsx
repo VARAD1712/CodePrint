@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User as UserIcon, Loader2, RefreshCw, FileText, Presentation, ExternalLink, Sparkles, GitBranch, Calendar, Award, ShieldCheck, Plus, Trash2, Zap, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
@@ -37,7 +37,9 @@ interface ProfileProps {
 }
 
 export function Profile({ profile, setProfile, githubResult, setGithubResult, linkedinUrl, setLinkedinUrl, onReposLoaded, onProfileAnalyzed }: ProfileProps) {
-  const [githubUsername, setGithubUsername] = useState('');
+  const [githubUsername, setGithubUsername] = useState(
+    profile?.github_username || (githubResult as any)?.username || localStorage.getItem(`codeprint_gh_username_${profile?.id}`) || ''
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
 
@@ -45,10 +47,25 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
   const [isAnalyzingPitch, setIsAnalyzingPitch] = useState(false);
   const [pitchError, setPitchError] = useState('');
 
-  const [linkedinInput, setLinkedinInput] = useState(linkedinUrl);
-  const [linkedinHeadline, setLinkedinHeadline] = useState(profile?.linkedin_headline || '');
+  const [linkedinInput, setLinkedinInput] = useState(
+    linkedinUrl || profile?.linkedin_url || localStorage.getItem(`codeprint_linkedin_url_${profile?.id}`) || ''
+  );
+  const [linkedinHeadline, setLinkedinHeadline] = useState(
+    profile?.linkedin_headline || localStorage.getItem(`codeprint_linkedin_headline_${profile?.id}`) || ''
+  );
   const [linkedinSaved, setLinkedinSaved] = useState(false);
   const [savingLinkedin, setSavingLinkedin] = useState(false);
+
+  useEffect(() => {
+    const savedGh = profile?.github_username || (githubResult as any)?.username || localStorage.getItem(`codeprint_gh_username_${profile?.id}`) || '';
+    if (savedGh && !githubUsername) setGithubUsername(savedGh);
+
+    const savedLi = linkedinUrl || profile?.linkedin_url || localStorage.getItem(`codeprint_linkedin_url_${profile?.id}`) || '';
+    if (savedLi && !linkedinInput) setLinkedinInput(savedLi);
+
+    const savedHeadline = profile?.linkedin_headline || localStorage.getItem(`codeprint_linkedin_headline_${profile?.id}`) || '';
+    if (savedHeadline && !linkedinHeadline) setLinkedinHeadline(savedHeadline);
+  }, [profile, githubResult, linkedinUrl]);
 
   // Hackathon Vault State
   const [showHackathonForm, setShowHackathonForm] = useState(false);
@@ -178,6 +195,15 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
 
       if (dbError) console.warn("Supabase update warning:", dbError.message);
 
+      localStorage.setItem(`codeprint_gh_username_${profile.id}`, githubUsername);
+      localStorage.setItem(`codeprint_gh_result_${profile.id}`, JSON.stringify({
+        talentScore: result.talentScore,
+        breakdown: result.breakdown || null,
+        stats: result.stats,
+        avatarUrl: result.avatarUrl || null,
+        username: githubUsername,
+      }));
+
       setGithubResult(result);
       setProfile({
         ...profile,
@@ -230,32 +256,35 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
   const handleSaveLinkedin = async () => {
     if (!profile?.id) return;
     setSavingLinkedin(true);
+    const cleanedUrl = linkedinInput.trim();
+    const cleanedHeadline = linkedinHeadline.trim();
+    
+    localStorage.setItem(`codeprint_linkedin_url_${profile.id}`, cleanedUrl);
+    localStorage.setItem(`codeprint_linkedin_headline_${profile.id}`, cleanedHeadline);
+
     try {
-      const { error } = await supabase.from('profiles').update({
-        linkedin_url: linkedinInput.trim(),
-        linkedin_headline: linkedinHeadline.trim() || null,
+      await supabase.from('profiles').update({
+        linkedin_url: cleanedUrl || null,
+        linkedin_headline: cleanedHeadline || null,
       }).eq('id', profile.id);
-
-      if (error) throw error;
-
-      setLinkedinUrl(linkedinInput);
-      setProfile({
-        ...profile,
-        linkedin_url: linkedinInput,
-        linkedin_headline: linkedinHeadline,
-      });
-
-      if (githubResult && linkedinInput.trim()) {
-        await runFullProfileAnalysis(githubResult, linkedinInput, linkedinHeadline);
-      }
-
-      setLinkedinSaved(true);
-      setTimeout(() => setLinkedinSaved(false), 2000);
     } catch (err) {
-      console.error(err);
-    } finally {
-      setSavingLinkedin(false);
+      console.warn('Supabase offline update warning for LinkedIn:', err);
     }
+
+    setLinkedinUrl(cleanedUrl);
+    setProfile({
+      ...profile,
+      linkedin_url: cleanedUrl,
+      linkedin_headline: cleanedHeadline,
+    });
+
+    if (githubResult && cleanedUrl) {
+      await runFullProfileAnalysis(githubResult, cleanedUrl, cleanedHeadline);
+    }
+
+    setLinkedinSaved(true);
+    setTimeout(() => setLinkedinSaved(false), 2000);
+    setSavingLinkedin(false);
   };
 
   const hasGithubData = githubResult && githubResult.talentScore != null;

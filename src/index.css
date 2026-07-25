@@ -35,11 +35,24 @@
 
 @layer base {
   body {
-    @apply bg-cream text-ink-light font-sans antialiased;
+    @apply bg-cream text-ink-light font-sans antialiased leading-relaxed text-sm;
+    font-size: 15px;
   }
   
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-ink;
+  h1 {
+    @apply text-ink font-extrabold tracking-tight leading-tight text-3xl;
+  }
+  h2 {
+    @apply text-ink font-bold tracking-tight leading-snug text-2xl;
+  }
+  h3 {
+    @apply text-ink font-semibold tracking-tight leading-snug text-xl;
+  }
+  h4 {
+    @apply text-ink font-semibold tracking-normal leading-normal text-lg;
+  }
+  h5, h6 {
+    @apply text-ink font-medium tracking-normal leading-normal text-base;
   }
 
   /* Smooth scrollbar */
@@ -85,11 +98,12 @@
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(232, 230, 225, 0.8);
     box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05), 0 2px 8px -2px rgba(0,0,0,0.03);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
   }
   .glass-card:hover {
-    box-shadow: 0 10px 30px -4px rgba(0,0,0,0.08), 0 4px 12px -2px rgba(0,0,0,0.04);
-    border-color: rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px -4px rgba(0,0,0,0.1), 0 4px 14px -2px rgba(0,0,0,0.05);
+    border-color: rgba(0, 0, 0, 0.18);
   }
 
   /* Soft card */
@@ -97,11 +111,20 @@
     background: #FFFFFF;
     border: 1px solid #E8E6E1;
     box-shadow: 0 2px 6px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.03);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
   }
   .soft-card:hover {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.06), 0 16px 36px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.07), 0 20px 42px rgba(0,0,0,0.06);
     border-color: #D1D1CB;
+  }
+
+  /* Interactive button glow and feel */
+  .interactive-btn {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .interactive-btn:active {
+    transform: scale(0.98);
   }
 
   /* Premium interactive badge */

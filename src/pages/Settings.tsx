@@ -15,8 +15,12 @@ interface SettingsProps {
 export function Settings({ profile, githubUsername, linkedinUrl, onUpdateGithub, onUpdateLinkedin, onUpdateProfile }: SettingsProps) {
   const [name, setName] = useState(profile?.full_name || '');
   const [email, setEmail] = useState(profile?.email || '');
-  const [ghUser, setGhUser] = useState(githubUsername);
-  const [liUrl, setLiUrl] = useState(linkedinUrl);
+  const [ghUser, setGhUser] = useState(
+    githubUsername || profile?.github_username || localStorage.getItem(`codeprint_gh_username_${profile?.id}`) || ''
+  );
+  const [liUrl, setLiUrl] = useState(
+    linkedinUrl || profile?.linkedin_url || localStorage.getItem(`codeprint_linkedin_url_${profile?.id}`) || ''
+  );
   const [saved, setSaved] = useState('');
 
   const handleSave = async (section: string) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
@@ -65,12 +65,24 @@ function AuthenticatedApp() {
         const activeRole = localStorage.getItem('codeprint_active_role');
         const finalRole = activeRole || dbRole || 'student';
 
+        const storedGhUsername = localStorage.getItem(`codeprint_gh_username_${uid}`) || '';
+        const storedLinkedin = localStorage.getItem(`codeprint_linkedin_url_${uid}`) || '';
+        const storedHeadline = localStorage.getItem(`codeprint_linkedin_headline_${uid}`) || '';
+        const storedGhResult = localStorage.getItem(`codeprint_gh_result_${uid}`);
+
+        const finalGhUsername = data?.github_username || storedGhUsername;
+        const finalLinkedinUrl = data?.linkedin_url || storedLinkedin;
+        const finalHeadline = data?.linkedin_headline || storedHeadline;
+
         setProfile({
           ...(data as UserProfile || {}),
           id: uid,
           email: firebaseUser.email || (data as UserProfile)?.email || '',
           full_name: firebaseUser.displayName || (data as UserProfile)?.full_name || 'User',
           role: finalRole as UserRole,
+          github_username: finalGhUsername,
+          linkedin_url: finalLinkedinUrl,
+          linkedin_headline: finalHeadline,
         });
 
         if (data?.github_stats && data?.talent_score != null) {
@@ -79,29 +91,55 @@ function AuthenticatedApp() {
             breakdown: data.github_breakdown || null,
             stats: data.github_stats,
             avatarUrl: data.avatar_url || null,
-            username: data.github_username || '',
+            username: finalGhUsername,
           });
-
-          if (data.github_username) {
-            try {
-              const reposRes = await axios.get(`/api/github-repos/${data.github_username}`);
-              setRepos(reposRes.data.repos || []);
-            } catch { /* ignore */ }
-          }
+        } else if (storedGhResult) {
+          try {
+            const parsed = JSON.parse(storedGhResult);
+            setGithubResult(parsed);
+          } catch { /* ignore */ }
         }
 
-        if (data?.linkedin_url) setLinkedinUrl(data.linkedin_url);
+        if (finalGhUsername) {
+          try {
+            const reposRes = await axios.get(`/api/github-repos/${finalGhUsername}`);
+            setRepos(reposRes.data.repos || []);
+          } catch { /* ignore */ }
+        }
+
+        if (finalLinkedinUrl) setLinkedinUrl(finalLinkedinUrl);
         await refreshNotifications(uid);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching profile:', err);
         const activeRole = localStorage.getItem('codeprint_active_role');
+        const storedGhUsername = localStorage.getItem(`codeprint_gh_username_${uid}`) || '';
+        const storedLinkedin = localStorage.getItem(`codeprint_linkedin_url_${uid}`) || '';
+        const storedHeadline = localStorage.getItem(`codeprint_linkedin_headline_${uid}`) || '';
+        const storedGhResult = localStorage.getItem(`codeprint_gh_result_${uid}`);
+
         setProfile({
           id: uid,
           email: firebaseUser.email || '',
           full_name: firebaseUser.displayName || 'User',
           role: (activeRole as UserRole) || 'student',
+          github_username: storedGhUsername,
+          linkedin_url: storedLinkedin,
+          linkedin_headline: storedHeadline,
         });
+
+        if (storedGhResult) {
+          try {
+            setGithubResult(JSON.parse(storedGhResult));
+          } catch { /* ignore */ }
+        }
+        if (storedGhUsername) {
+          try {
+            const reposRes = await axios.get(`/api/github-repos/${storedGhUsername}`);
+            setRepos(reposRes.data.repos || []);
+          } catch { /* ignore */ }
+        }
+        if (storedLinkedin) setLinkedinUrl(storedLinkedin);
         setLoading(false);
       }
     };
@@ -117,6 +155,87 @@ function AuthenticatedApp() {
     return () => unsubscribe();
   }, [navigate, refreshNotifications]);
 
+  const role: UserRole = profile?.role || 'student';
+
+  const prefetchedRef = useRef<Record<string, boolean>>({});
+
+  const handlePrefetchRoute = useCallback(async (routePath: string) => {
+    if (prefetchedRef.current[routePath] || !profile) return;
+    prefetchedRef.current[routePath] = true;
+
+    // Prefetch GitHub repos when intending to view projects or portfolio
+    if ((routePath.includes('projects') || routePath.includes('portfolio') || routePath.includes('resume')) && repos.length === 0) {
+      const ghUser = profile.github_username || localStorage.getItem(`codeprint_gh_username_${profile.id}`) || '';
+      if (ghUser) {
+        try {
+          const res = await axios.get(`/api/github-repos/${ghUser}`);
+          if (res.data?.repos) setRepos(res.data.repos);
+        } catch (e) { /* ignore prefetch error */ }
+      }
+    }
+
+    // Prefetch Perplexity Career Guidance insights into localStorage when intending to view Career AI
+    if (routePath.includes('career')) {
+      const cacheKey = `codeprint_career_guidance_${profile.id}`;
+      if (!localStorage.getItem(cacheKey)) {
+        try {
+          const res = await axios.post('/api/career-guidance-perplexity', {
+            targetRole: 'Full Stack AI Developer',
+            skills: profile.github_stats || 'React, Node, Python, AI',
+            experienceLevel: 'Student / Fresher'
+          });
+          if (res.data?.success && res.data?.analysis) {
+            localStorage.setItem(cacheKey, res.data.analysis);
+          }
+        } catch (e) { /* ignore prefetch error */ }
+      }
+    }
+  }, [profile, repos.length]);
+
+  const handleUpdateProfile = useCallback(async (name: string, email: string) => {
+    if (!profile) return;
+    try {
+      await supabase.from('profiles').update({ full_name: name, email }).eq('id', profile.id);
+    } catch (e) { console.warn(e); }
+    setProfile(prev => prev ? { ...prev, full_name: name, email } : null);
+  }, [profile]);
+
+  const handleUpdateGithub = useCallback(async (username: string) => {
+    if (!profile) return;
+    localStorage.setItem(`codeprint_gh_username_${profile.id}`, username);
+    try {
+      await supabase.from('profiles').update({ github_username: username }).eq('id', profile.id);
+    } catch (e) { console.warn('Supabase offline fallback:', e); }
+    setProfile(prev => prev ? { ...prev, github_username: username } : null);
+  }, [profile]);
+
+  const handleUpdateLinkedin = useCallback(async (url: string, headline?: string) => {
+    if (!profile) return;
+    localStorage.setItem(`codeprint_linkedin_url_${profile.id}`, url);
+    if (headline !== undefined) localStorage.setItem(`codeprint_linkedin_headline_${profile.id}`, headline);
+    try {
+      await supabase.from('profiles').update({
+        linkedin_url: url,
+        ...(headline !== undefined ? { linkedin_headline: headline } : {}),
+      }).eq('id', profile.id);
+    } catch (e) { console.warn('Supabase offline fallback:', e); }
+    setLinkedinUrl(url);
+    setProfile(prev => prev ? { ...prev, linkedin_url: url, linkedin_headline: headline ?? prev.linkedin_headline } : null);
+  }, [profile]);
+
+  const onRefreshNotificationsCallback = useCallback(() => {
+    if (profile?.id) refreshNotifications(profile.id);
+  }, [profile?.id, refreshNotifications]);
+
+  const shellProps = useMemo(() => ({
+    profile: profile || ({} as UserProfile),
+    githubResult,
+    role,
+    notifications,
+    onRefreshNotifications: onRefreshNotificationsCallback,
+    onPrefetch: handlePrefetchRoute,
+  }), [profile, githubResult, role, notifications, onRefreshNotificationsCallback, handlePrefetchRoute]);
+
   if (loading || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream">
@@ -128,39 +247,10 @@ function AuthenticatedApp() {
     );
   }
 
-  const role: UserRole = profile.role || 'student';
-
-  const handleUpdateProfile = async (name: string, email: string) => {
-    await supabase.from('profiles').update({ full_name: name, email }).eq('id', profile.id);
-    setProfile({ ...profile, full_name: name, email });
-  };
-
-  const handleUpdateGithub = async (username: string) => {
-    await supabase.from('profiles').update({ github_username: username }).eq('id', profile.id);
-    setProfile({ ...profile, github_username: username });
-  };
-
-  const handleUpdateLinkedin = async (url: string, headline?: string) => {
-    await supabase.from('profiles').update({
-      linkedin_url: url,
-      ...(headline !== undefined ? { linkedin_headline: headline } : {}),
-    }).eq('id', profile.id);
-    setLinkedinUrl(url);
-    setProfile({ ...profile, linkedin_url: url, linkedin_headline: headline ?? profile.linkedin_headline });
-  };
-
-  const shellProps = {
-    profile,
-    githubResult,
-    role,
-    notifications,
-    onRefreshNotifications: () => refreshNotifications(profile.id),
-  };
-
   if (role === 'company') {
     return (
       <AppShell {...shellProps}>
-        <PageNavigation role="company" />
+        <PageNavigation role="company" onPrefetch={handlePrefetchRoute} />
         <Routes>
           <Route index element={<Navigate to="/company/dashboard" replace />} />
           <Route path="company/dashboard" element={<CompanyDashboard profile={profile} />} />
@@ -189,7 +279,7 @@ function AuthenticatedApp() {
 
   return (
     <AppShell {...shellProps}>
-      <PageNavigation role="student" />
+      <PageNavigation role="student" onPrefetch={handlePrefetchRoute} />
       <Routes>
         <Route index element={<Navigate to="/home" replace />} />
         <Route path="home" element={<StudentHome profile={profile} />} />

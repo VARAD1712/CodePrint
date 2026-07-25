@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Bell, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabase';
@@ -10,7 +10,7 @@ interface NotificationsBellProps {
   onRefresh: () => void;
 }
 
-export function NotificationsBell({ userId, notifications, onRefresh }: NotificationsBellProps) {
+export const NotificationsBell = React.memo(function NotificationsBell({ userId, notifications, onRefresh }: NotificationsBellProps) {
   const [open, setOpen] = useState(false);
   const unread = notifications.filter(n => !n.read).length;
 
@@ -100,4 +100,4 @@ export function NotificationsBell({ userId, notifications, onRefresh }: Notifica
       </AnimatePresence>
     </div>
   );
-}
+});
