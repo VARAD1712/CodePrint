@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Loader2, Users, Sparkles, Briefcase, Calendar, CheckCircle2, Sliders, X, Brain, Zap, HelpCircle } from 'lucide-react';
+import { Plus, Loader2, Users, Sparkles, Briefcase, Calendar, Sliders, X, Brain, Zap, HelpCircle } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { recruitmentService } from '../../services/recruitmentService';
 import type { Profile, Recruitment, MockQuestion } from '../../types';
+
 
 interface CompanyRecruitmentsProps {
   profile: Profile;

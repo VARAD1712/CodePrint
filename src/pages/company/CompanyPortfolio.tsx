@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Sparkles, Globe, Briefcase, ShieldCheck, Edit3, CheckCircle2, Plus, Trash2, Users, Award, Rocket } from 'lucide-react';
+
+import { Building2, Briefcase, ShieldCheck, Edit3, CheckCircle2, Award, Rocket } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { recruitmentService } from '../../services/recruitmentService';
 import type { Profile, Recruitment } from '../../types';
+
 
 interface CompanyPortfolioProps {
   profile: Profile;
@@ -157,7 +159,7 @@ export function CompanyPortfolio({ profile, setProfile }: CompanyPortfolioProps)
                   {portfolioData.tech_stack.map((t: string, i: number) => (
                     <span key={i} className="px-2.5 py-1 bg-cream text-ink font-bold text-xs rounded-xl flex items-center gap-2">
                       {t}
-                      <button onClick={() => setPortfolioData({ ...portfolioData, tech_stack: portfolioData.tech_stack.filter((_, idx: number) => idx !== i) })} className="text-rose-600 font-bold">×</button>
+                      <button onClick={() => setPortfolioData({ ...portfolioData, tech_stack: portfolioData.tech_stack.filter((_: any, idx: number) => idx !== i) })} className="text-rose-600 font-bold">×</button>
                     </span>
                   ))}
                 </div>
@@ -181,10 +183,11 @@ export function CompanyPortfolio({ profile, setProfile }: CompanyPortfolioProps)
                   {portfolioData.perks.map((p: string, i: number) => (
                     <span key={i} className="px-2.5 py-1 bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold text-xs rounded-xl flex items-center gap-2">
                       {p}
-                      <button onClick={() => setPortfolioData({ ...portfolioData, perks: portfolioData.perks.filter((_, idx: number) => idx !== i) })} className="text-rose-600 font-bold">×</button>
+                      <button onClick={() => setPortfolioData({ ...portfolioData, perks: portfolioData.perks.filter((_: any, idx: number) => idx !== i) })} className="text-rose-600 font-bold">×</button>
                     </span>
                   ))}
                 </div>
+
                 <form onSubmit={addPerk} className="flex gap-2">
                   <input
                     type="text"

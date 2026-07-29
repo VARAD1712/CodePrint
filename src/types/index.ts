@@ -1,5 +1,7 @@
 export type UserRole = 'student' | 'company';
 
+export type PipelineStage = 'Applied' | 'Under Review' | 'Technical Screening' | 'Interview Scheduled' | 'Offered' | 'Rejected' | string;
+
 export interface Profile {
   id: string;
   email: string;
@@ -46,16 +48,31 @@ export interface HackathonAchievement {
   bonus_points: number;
 }
 
+export interface CustomProject {
+  title?: string;
+  name?: string;
+  description?: string;
+  tags?: string[];
+  tech_stack?: string[];
+  link?: string;
+  url?: string;
+}
+
 export interface PortfolioConfig {
-  theme?: 'dark' | 'light' | 'emerald' | 'sapphire';
+  theme?: string;
+  title?: string;
+  bio?: string;
   custom_bio?: string;
   featured_repos?: string[];
+  custom_projects?: CustomProject[] | any[];
   show_ai_score?: boolean;
   show_hackathons?: boolean;
   public_url?: string;
   tagline?: string;
   hero_title?: string;
 }
+
+
 
 export interface MockQuestion {
   id: string;
@@ -166,6 +183,7 @@ export interface Application {
   recruitment_id: string;
   student_id: string;
   status: 'pending' | 'accepted' | 'rejected';
+  pipeline_stage?: 'applied' | 'screening' | 'interview_scheduled' | 'offer_extended' | 'hired' | 'rejected' | string;
   ai_match_score: number | null;
   applied_at: string;
   recruiter_notes?: string | null;

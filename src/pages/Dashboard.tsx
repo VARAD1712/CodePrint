@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, FolderGit2 } from 'lucide-react';
+import { ArrowRight, FolderGit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TalentScoreRing } from '../components/TalentScoreRing';
 import { ImprovementSuggestions } from '../components/ImprovementSuggestions';
@@ -15,7 +15,6 @@ interface DashboardProps {
 
 export function Dashboard({ profile, githubResult, repos }: DashboardProps) {
   const navigate = useNavigate();
-  const hasGithubData = githubResult && githubResult.talentScore != null;
   const aiScore = profile.ai_profile_score ?? githubResult?.talentScore;
   const topRepos = repos.slice(0, 3);
 
@@ -30,7 +29,7 @@ export function Dashboard({ profile, githubResult, repos }: DashboardProps) {
           Welcome back, {profile?.full_name?.split(' ')[0] || 'Student'} 👋
         </h1>
         <p className="text-ink-light text-sm mt-1.5">
-          Your AI-analyzed profile from GitHub and LinkedIn.
+          Your AI-analyzed profile telemetry from GitHub and LinkedIn.
         </p>
       </motion.div>
 
@@ -95,41 +94,18 @@ export function Dashboard({ profile, githubResult, repos }: DashboardProps) {
             )}
           </div>
         </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="soft-card rounded-xl p-8 text-center"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-lavender-light flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-6 h-6 text-lavender" />
-          </div>
-          <h3 className="text-lg font-semibold text-ink mb-1.5">Connect Your Profiles</h3>
-          <p className="text-sm text-ink-light mb-4 max-w-md mx-auto">
-            Link GitHub and LinkedIn on your Profile page to get your AI talent score.
-          </p>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/profile')}
-            className="bg-ink text-cream px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors"
-          >
-            Go to Profile
-          </motion.button>
-        </motion.div>
-      )}
+      ) : null}
 
       {topRepos.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          className="space-y-4"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FolderGit2 className="w-4 h-4 text-ink-faint" />
-              <h3 className="text-sm font-semibold text-ink uppercase tracking-wider">Top Projects</h3>
+              <FolderGit2 className="w-5 h-5 text-sage" />
+              <h2 className="text-lg font-bold text-ink">Featured GitHub Repositories</h2>
             </div>
             <button
               onClick={() => navigate('/projects')}
@@ -144,8 +120,8 @@ export function Dashboard({ profile, githubResult, repos }: DashboardProps) {
               <ProjectCard
                 key={repo.name}
                 name={repo.name}
-                description={repo.description}
-                language={repo.language}
+                description={repo.description || undefined}
+                language={repo.language || undefined}
                 stars={repo.stargazers_count || 0}
                 forks={repo.forks_count || 0}
                 url={repo.html_url}
@@ -159,3 +135,4 @@ export function Dashboard({ profile, githubResult, repos }: DashboardProps) {
     </div>
   );
 }
+

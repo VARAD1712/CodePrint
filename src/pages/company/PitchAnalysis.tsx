@@ -7,8 +7,10 @@ interface PitchAnalysisProps {
   profile: Profile;
 }
 
-export function PitchAnalysis({ profile }: PitchAnalysisProps) {
+export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
+  void _profile;
   const [isUploading, setIsUploading] = useState(false);
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasReport, setHasReport] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);

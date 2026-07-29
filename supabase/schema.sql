@@ -50,6 +50,10 @@ CREATE TABLE IF NOT EXISTS applications (
   UNIQUE(recruitment_id, student_id)
 );
 
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS pipeline_stage text DEFAULT 'applied' CHECK (pipeline_stage IN ('applied', 'screening', 'interview_scheduled', 'offer_extended', 'hired', 'rejected'));
+CREATE INDEX IF NOT EXISTS idx_applications_recruitment_stage ON applications(recruitment_id, pipeline_stage);
+CREATE INDEX IF NOT EXISTS idx_applications_student ON applications(student_id);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Clock, ShieldAlert, CheckCircle, XCircle, AlertTriangle, ChevronRight, Award, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Brain, Clock, ShieldAlert, CheckCircle, XCircle, AlertTriangle, ChevronRight, Award } from 'lucide-react';
 import type { Recruitment, Application, Profile } from '../types';
 import { recruitmentService } from '../services/recruitmentService';
+
 
 interface AssessmentTakerModalProps {
   recruitment: Recruitment;

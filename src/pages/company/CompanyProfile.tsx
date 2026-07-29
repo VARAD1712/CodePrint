@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, Loader2, Plus, X, Building, Users, MessageSquare, Sparkles, CheckCircle2, UserCheck, Globe } from 'lucide-react';
+import { Save, Loader2, Plus, X, Building, MessageSquare, Sparkles, CheckCircle2, UserCheck, Globe } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import type { Profile } from '../../types';
+
 
 interface CompanyProfileProps {
   profile: Profile;

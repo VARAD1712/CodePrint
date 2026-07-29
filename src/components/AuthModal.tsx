@@ -3,6 +3,7 @@ import { auth } from '../services/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { X, Loader2, GraduationCap, Building2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { authService } from '../services/apiClient';
 import type { UserRole } from '../types';
 
 interface AuthModalProps {
@@ -48,6 +49,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialAccountType = 'st
       .upsert([payload], { onConflict: 'id' });
 
     if (dbError) console.error('Supabase Profile Error:', dbError);
+    await authService.negotiateToken(uid, userEmail, accountType, name, payload.company_name as string);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +69,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialAccountType = 'st
         if (updateError) {
           console.error("Failed to update role in Supabase. Check if the 'role' column exists or if RLS is blocking it:", updateError);
         }
+        await authService.negotiateToken(userCredential.user.uid, userCredential.user.email, accountType, userCredential.user.displayName || 'User');
       }
 
       onSuccess(accountType);

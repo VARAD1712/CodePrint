@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User as UserIcon, Loader2, RefreshCw, FileText, Presentation, ExternalLink, Sparkles, GitBranch, Calendar, Award, ShieldCheck, Plus, Trash2, Zap, CheckCircle2 } from 'lucide-react';
+import { User as UserIcon, Loader2, RefreshCw, FileText, Presentation, ExternalLink, Sparkles, GitBranch, Calendar, Award, ShieldCheck, Plus, Trash2, Zap } from 'lucide-react';
 import axios from 'axios';
 import { supabase } from '../services/supabase';
+
 import { LinkedinIcon } from '../components/BrandIcons';
 import { TalentScoreRing } from '../components/TalentScoreRing';
 import { ScoreBreakdown } from '../components/ScoreBreakdown';
@@ -144,7 +145,8 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
         linkedinHeadline: headline,
         profile: { name: profile.full_name, email: profile.email },
       });
-      const { overallScore, summary } = res.data;
+      const { overallScore } = res.data;
+
 
       await supabase.from('profiles').update({
         ai_profile_score: overallScore,

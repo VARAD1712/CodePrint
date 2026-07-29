@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Loader2, Sparkles, Briefcase, Code2, FolderGit2, BarChart3 } from 'lucide-react';
+import { Download, Loader2, Sparkles, Briefcase, Code2, FolderGit2, BarChart3 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '../components/BrandIcons';
 import axios from 'axios';
+
 
 interface ResumeBuilderProps {
   profile: any;

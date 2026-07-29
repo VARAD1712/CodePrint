@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Video, Mic, MicOff, VideoOff, MessageSquare, Loader2 } from 'lucide-react';
+import { Video, Mic, MicOff, VideoOff, MessageSquare } from 'lucide-react';
 import type { Profile } from '../../types';
 
 interface AiInterviewProps {
