@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, MapPin, Briefcase, Loader2, CheckCircle2, Brain, Zap, ArrowRight, Award } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { Building2, Briefcase, Loader2, CheckCircle2, Brain, ArrowRight } from 'lucide-react';
 import { recruitmentService } from '../services/recruitmentService';
 import { AssessmentTakerModal } from '../components/AssessmentTakerModal';
 import type { Profile, Recruitment, Application } from '../types';
+
 
 interface CompanyProfileData {
   id: string;

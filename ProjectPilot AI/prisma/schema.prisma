@@ -1,0 +1,53 @@
+datasource db {
+  provider = "sqlite" // Set to "postgresql" in production Docker/cloud environments
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String?
+  name         String
+  role         String    @default("STUDENT") // STUDENT, FACULTY, ADMIN
+  avatarUrl    String?
+  githubToken  String?
+  projects     Project[]
+  createdAt    DateTime  @default(now())
+}
+
+model Project {
+  id              String      @id @default(uuid())
+  title           String
+  description     String
+  innovationScore Int         @default(0)
+  status          String      @default("IDEATION") // IDEATION, PLANNING, BUILDING
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones      Milestone[]
+  documents       Document[]
+  githubRepo      String?
+  createdAt       DateTime    @default(now())
+}
+
+model Milestone {
+  id          String   @id @default(uuid())
+  projectId   String
+  title       String
+  dueDate     DateTime?
+  isCompleted Boolean  @default(false)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  projectId String
+  type      String   // 'RESEARCH_PAPER', 'TECH_STACK', 'API'
+  title     String
+  summary   String
+  url       String?
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}

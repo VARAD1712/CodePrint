@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle2, AlertCircle, GraduationCap, Building2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, GraduationCap, Building2 } from 'lucide-react';
 import type { UserRole } from '../types';
+
 
 interface HeroProps {
   onOpenAuth?: (type: UserRole) => void;

@@ -23,6 +23,7 @@ import { supabase } from './services/supabase';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import axios from 'axios';
+import { authService } from './services/apiClient';
 import type { Profile as UserProfile, GitHubResult, Repo, Notification, UserRole } from './types';
 
 function AuthenticatedApp() {
@@ -74,16 +75,21 @@ function AuthenticatedApp() {
         const finalLinkedinUrl = data?.linkedin_url || storedLinkedin;
         const finalHeadline = data?.linkedin_headline || storedHeadline;
 
+        const finalName = firebaseUser.displayName || (data as UserProfile)?.full_name || 'User';
+        const finalRoleType = finalRole as UserRole;
         setProfile({
           ...(data as UserProfile || {}),
           id: uid,
           email: firebaseUser.email || (data as UserProfile)?.email || '',
-          full_name: firebaseUser.displayName || (data as UserProfile)?.full_name || 'User',
-          role: finalRole as UserRole,
+          full_name: finalName,
+          role: finalRoleType,
           github_username: finalGhUsername,
           linkedin_url: finalLinkedinUrl,
           linkedin_headline: finalHeadline,
         });
+
+        // Ensure active JWT authorization token is negotiated and saved
+        await authService.negotiateToken(uid, firebaseUser.email || null, finalRoleType, finalName);
 
         if (data?.github_stats && data?.talent_score != null) {
           setGithubResult({

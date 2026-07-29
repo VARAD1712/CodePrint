@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, ShieldAlert, ShieldX, RefreshCw, CheckCircle2, AlertTriangle, Cpu, Terminal, FileCheck, Lock, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ShieldCheck, ShieldAlert, ShieldX, RefreshCw, CheckCircle2, Cpu, Terminal, FileCheck, Lock, X } from 'lucide-react';
 import axios from 'axios';
-import type { FraudAnalysisReport, Profile, Application } from '../types';
+import type { FraudAnalysisReport } from '../types';
+
 
 interface FraudAnalysisModalProps {
   candidateName: string;

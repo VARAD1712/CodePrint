@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Globe, GitBranch, ExternalLink, ShieldCheck, Plus, Trash2, CheckCircle2, Eye, Edit3, Award, Code2, Rocket, Share2 } from 'lucide-react';
+import { Globe, ExternalLink, ShieldCheck, Plus, Trash2, CheckCircle2, Eye, Edit3, Award, Code2, Rocket } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import type { Profile, PortfolioConfig, HackathonAchievement } from '../types';
 
@@ -11,8 +11,10 @@ interface PortfolioProps {
 }
 
 export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioProps) {
+  void githubRepos;
   const [isEditing, setIsEditing] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
 
   // Default / stored config
   const defaultConfig: PortfolioConfig = profile.portfolio_config || (
@@ -74,14 +76,14 @@ export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioPr
       link: newProjLink.trim() || 'https://github.com',
       tech_stack: newProjTech.split(',').map(s => s.trim()).filter(Boolean)
     };
-    setConfig({ ...config, custom_projects: [...config.custom_projects, newProj] });
+    setConfig({ ...config, custom_projects: [...(config.custom_projects || []), newProj] });
     setNewProjTitle('');
     setNewProjDesc('');
     setNewProjLink('');
   };
 
   const handleRemoveProject = (idx: number) => {
-    const updated = config.custom_projects.filter((_, i) => i !== idx);
+    const updated = (config.custom_projects || []).filter((_: any, i: number) => i !== idx);
     setConfig({ ...config, custom_projects: updated });
   };
 
@@ -103,7 +105,8 @@ export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioPr
     }
   };
 
-  const currentTheme = themeClasses[config.theme] || themeClasses.dark_obsidian;
+  const currentTheme = themeClasses[config.theme || 'dark_obsidian'] || themeClasses.dark_obsidian;
+
 
   return (
     <div className="space-y-8 pb-12">
@@ -302,7 +305,7 @@ export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioPr
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {config.custom_projects.map((proj, idx) => (
+            {(config.custom_projects || []).map((proj: any, idx: number) => (
               <div key={idx} className="p-6 rounded-3xl border border-border-soft bg-cream/30 hover:bg-white hover:shadow-xl transition-all space-y-4 flex flex-col justify-between group">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-4">
@@ -320,7 +323,7 @@ export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioPr
 
                 <div className="space-y-4 pt-3 border-t border-border-soft/60">
                   <div className="flex flex-wrap gap-1.5">
-                    {proj.tech_stack.map((t, tIdx) => (
+                    {(proj.tech_stack || []).map((t: string, tIdx: number) => (
                       <span key={tIdx} className={`px-2.5 py-1 rounded-xl text-[11px] font-black border ${currentTheme.accent}`}>
                         {t}
                       </span>
@@ -340,6 +343,7 @@ export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioPr
               </div>
             ))}
           </div>
+
 
           {/* Hackathon & Achievement Showcase */}
           {config.show_hackathons && hackathons.length > 0 && (
