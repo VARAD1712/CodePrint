@@ -4,9 +4,10 @@ import { Users, Briefcase, TrendingUp, Sparkles, ArrowRight, Clock, ShieldCheck,
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { apiClient } from '../../services/apiClient';
+import { recruitmentService } from '../../services/recruitmentService';
 import { CompanyApplicants } from './CompanyApplicants';
 import { CompanyRecruitments } from './CompanyRecruitments';
-import type { Profile, Application } from '../../types';
+import type { Profile } from '../../types';
 
 
 interface CompanyDashboardProps {
@@ -33,6 +34,20 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
   useEffect(() => {
     loadStats();
     loadAnalytics();
+
+    // Supabase Realtime automatic sync when student applies or status updates
+    const channel = supabase
+      .channel('company_dashboard_updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
+        loadStats();
+        loadAnalytics();
+        showToast('Live Alert: New candidate application activity detected!');
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profile.id]);
 
   const showToast = (msg: string) => {
@@ -41,28 +56,14 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
   };
 
   const loadStats = async () => {
-    const { data: recs } = await supabase
-      .from('recruitments')
-      .select('id')
-      .eq('company_id', profile.id);
+    const recs = await recruitmentService.getRecruitments(profile.id);
+    const apps = await recruitmentService.getApplications({ companyId: profile.id });
 
-    const recIds = (recs || []).map(r => r.id);
-    if (recIds.length === 0) {
-      setStats({ recruitments: 0, applicants: 0, pending: 0, aiScoreAvg: 89 });
-      return;
-    }
-
-    const { data: apps } = await supabase
-      .from('applications')
-      .select('status')
-      .in('recruitment_id', recIds);
-
-    const applications = (apps || []) as Application[];
     setStats({
-      recruitments: recIds.length,
-      applicants: applications.length,
-      pending: applications.filter(a => a.status === 'pending').length,
-      aiScoreAvg: applications.length > 0 ? 91 : 89
+      recruitments: recs.length,
+      applicants: apps.length,
+      pending: apps.filter(a => a.status === 'pending').length,
+      aiScoreAvg: apps.length > 0 ? Math.round(apps.reduce((acc, a) => acc + (a.ai_match_score || 85), 0) / apps.length) : 89
     });
   };
 
@@ -78,8 +79,8 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
     }
 
     // Local Data Aggregation Engine (Fallback)
-    const { data: recs } = await supabase.from('recruitments').select('id, title').eq('company_id', profile.id);
-    const recIds = (recs || []).map(r => r.id);
+    const recs = await recruitmentService.getRecruitments(profile.id);
+    const apps = await recruitmentService.getApplications({ companyId: profile.id });
     
     let totalApps = 24;
     let avgScore = 89;
@@ -92,22 +93,15 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
       'Rejected': 1,
     };
 
-    if (recIds.length > 0) {
-      const { data: apps } = await supabase
-        .from('applications')
-        .select('*, profiles:student_id(college, talent_score)')
-        .in('recruitment_id', recIds);
-      
-      if (apps && apps.length > 0) {
-        totalApps = apps.length;
-        const totalScore = apps.reduce((acc, curr: any) => acc + (curr.ai_match_score || curr.profiles?.talent_score || 85), 0);
-        avgScore = Math.round(totalScore / apps.length);
-      }
+    if (apps && apps.length > 0) {
+      totalApps = apps.length;
+      const totalScore = apps.reduce((acc, curr: any) => acc + (curr.ai_match_score || curr.profiles?.talent_score || 85), 0);
+      avgScore = Math.round(totalScore / apps.length);
     }
 
     setAnalytics({
       company_id: profile.id,
-      total_jobs: recIds.length || 3,
+      total_jobs: recs.length || 3,
       total_applications: totalApps,
       stage_funnel: stageFunnel,
       average_ai_match: avgScore,

@@ -11,6 +11,8 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github_username text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS talent_score integer;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github_stats jsonb;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github_breakdown jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github_freshness jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github_explainability jsonb;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pitch_score integer;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pitch_feedback jsonb;
@@ -22,7 +24,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS college text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS skills text[];
 
 CREATE TABLE IF NOT EXISTS recruitments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
   company_id text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   title text NOT NULL,
   description text,
@@ -39,8 +41,8 @@ CREATE TABLE IF NOT EXISTS recruitments (
 );
 
 CREATE TABLE IF NOT EXISTS applications (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  recruitment_id uuid NOT NULL REFERENCES recruitments(id) ON DELETE CASCADE,
+  id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  recruitment_id text NOT NULL REFERENCES recruitments(id) ON DELETE CASCADE,
   student_id text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   status text DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
   ai_match_score integer,
@@ -61,7 +63,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   title text NOT NULL,
   message text NOT NULL,
   read boolean DEFAULT false,
-  application_id uuid REFERENCES applications(id) ON DELETE SET NULL,
+  application_id text REFERENCES applications(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now()
 );
 
@@ -87,10 +89,10 @@ CREATE TABLE IF NOT EXISTS career_guidance (
 );
 
 CREATE TABLE IF NOT EXISTS interviews (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
   student_id text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   company_id text REFERENCES profiles(id) ON DELETE CASCADE,
-  application_id uuid REFERENCES applications(id) ON DELETE CASCADE,
+  application_id text REFERENCES applications(id) ON DELETE CASCADE,
   transcript jsonb,
   technical_rating integer,
   communication_rating integer,
@@ -120,3 +122,137 @@ ALTER TABLE pitch_analyses ENABLE ROW LEVEL SECURITY;
 CREATE POLICY IF NOT EXISTS "Allow all career_guidance" ON career_guidance FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY IF NOT EXISTS "Allow all interviews" ON interviews FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY IF NOT EXISTS "Allow all pitch_analyses" ON pitch_analyses FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- SAFE SCHEMA MIGRATIONS (UUID -> TEXT)
+-- ==========================================
+-- Ensure existing database tables support string-based or offline synced IDs cleanly
+ALTER TABLE IF EXISTS recruitments ALTER COLUMN id TYPE text USING id::text;
+ALTER TABLE IF EXISTS applications ALTER COLUMN id TYPE text USING id::text;
+ALTER TABLE IF EXISTS applications ALTER COLUMN recruitment_id TYPE text USING recruitment_id::text;
+ALTER TABLE IF EXISTS notifications ALTER COLUMN application_id TYPE text USING application_id::text;
+ALTER TABLE IF EXISTS interviews ALTER COLUMN id TYPE text USING id::text;
+ALTER TABLE IF EXISTS interviews ALTER COLUMN application_id TYPE text USING application_id::text;
+
+-- ==========================================
+-- SUPABASE NATIVE AUTOMATION & AI QUEUES
+-- ==========================================
+
+-- Enable extensions for cron scheduling and HTTP network requests if available
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
+-- AI Job Queue table for background BullMQ processing & Edge Function workers
+CREATE TABLE IF NOT EXISTS ai_job_queue (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_type text NOT NULL,
+  status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  payload jsonb NOT NULL,
+  error_message text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE ai_job_queue ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "Allow all ai_job_queue" ON ai_job_queue FOR ALL USING (true) WITH CHECK (true);
+
+-- Database Trigger Function: Auto-dispatch Fraud Detection on Application submission
+CREATE OR REPLACE FUNCTION trigger_ai_fraud_check()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Insert background job into ai_job_queue for asynchronous BullMQ / Edge processing
+  INSERT INTO ai_job_queue (job_type, payload)
+  VALUES (
+    'fraud-detection',
+    json_build_object(
+      'application_id', NEW.id,
+      'student_id', NEW.student_id,
+      'recruitment_id', NEW.recruitment_id,
+      'applied_at', NEW.applied_at
+    )::jsonb
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS tr_on_application_submitted ON applications;
+CREATE TRIGGER tr_on_application_submitted
+  AFTER INSERT ON applications
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_ai_fraud_check();
+
+-- pg_cron Schedule: Nightly GitHub Re-sync at 2 AM UTC
+-- Invokes Supabase Edge Function or internal server endpoint to update skill decay scores
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.schedule(
+      'nightly-github-sync',
+      '0 2 * * *',
+      $$
+      INSERT INTO ai_job_queue (job_type, payload)
+      VALUES ('nightly-github-sync', '{"scheduled": true}'::jsonb);
+      $$
+    );
+  END IF;
+EXCEPTION
+  WHEN undefined_table THEN
+    -- cron schema may require superuser or supabase platform execution
+    NULL;
+END $$;
+
+-- =========================================================
+-- Codeprint Enterprise: Shared Candidate Object & Recruiter Suite
+-- =========================================================
+
+-- 1. Extend profiles for Unified Candidate Object
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS recruiter_analysis jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hackathon_submissions jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS innovation_score integer DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS github_alignment_score integer DEFAULT 100;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trust_alignment_report jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS saved_searches jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS applications_received integer DEFAULT 0;
+
+-- 2. Extend recruitments for application counting
+ALTER TABLE recruitments ADD COLUMN IF NOT EXISTS applications_received integer DEFAULT 0;
+
+-- 3. Extend applications table for enhanced State Machine & Direct Invites
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url text;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS initiated_by text DEFAULT 'student' CHECK (initiated_by IN ('student', 'recruiter'));
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS offer_note text;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS salary_band text;
+
+-- 4. Create application_events table for audit logging & ATS-lite timeline view
+CREATE TABLE IF NOT EXISTS application_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id text NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+  event_type text NOT NULL,
+  description text,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE application_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "Allow all application_events" ON application_events FOR ALL USING (true) WITH CHECK (true);
+
+-- 5. Create hackathons table for event leaderboards and problem statements
+CREATE TABLE IF NOT EXISTS hackathons (
+  id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  title text NOT NULL,
+  description text,
+  problem_statements text[],
+  start_date timestamptz DEFAULT now(),
+  end_date timestamptz,
+  status text DEFAULT 'active' CHECK (status IN ('active', 'completed', 'upcoming')),
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE hackathons ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "Allow all hackathons" ON hackathons FOR ALL USING (true) WITH CHECK (true);
+
+-- Insert demo hackathon events if table is empty
+INSERT INTO hackathons (title, description, problem_statements, status)
+SELECT 'Codeprint Global AI Hackathon 2026', 'Build next-gen autonomous agentic coding systems and live recruiter Copilots.', ARRAY['Multi-Agent Orchestration Engine', 'Realtime AI Mismatch & Fraud Shield', 'Autonomous Tech Debt Eliminator'], 'active'
+WHERE NOT EXISTS (SELECT 1 FROM hackathons);
+

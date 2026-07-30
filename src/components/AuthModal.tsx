@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
-import { auth } from '../services/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth, githubProvider } from '../services/firebase';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth';
 import { X, Loader2, GraduationCap, Building2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { authService } from '../services/apiClient';
+import { GithubIcon } from './BrandIcons';
 import type { UserRole } from '../types';
 
 interface AuthModalProps {
@@ -32,7 +39,14 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialAccountType = 'st
 
   if (!isOpen) return null;
 
-  const upsertProfile = async (uid: string, userEmail: string | null, name: string) => {
+  const upsertProfile = async (
+    uid: string,
+    userEmail: string | null,
+    name: string,
+    githubUsername?: string,
+    avatarUrl?: string | null,
+    githubAccessToken?: string | null
+  ) => {
     const payload: Record<string, unknown> = {
       id: uid,
       email: userEmail,
@@ -43,12 +57,27 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialAccountType = 'st
     if (accountType === 'company') {
       payload.company_name = companyName.trim() || name;
     }
+    if (githubUsername) {
+      payload.github_username = githubUsername;
+    }
+    if (avatarUrl) {
+      payload.avatar_url = avatarUrl;
+    }
 
     const { error: dbError } = await supabase
       .from('profiles')
       .upsert([payload], { onConflict: 'id' });
 
     if (dbError) console.error('Supabase Profile Error:', dbError);
+
+    // Store GitHub access token in localStorage (not in Supabase for security)
+    if (githubAccessToken && uid) {
+      localStorage.setItem(`codeprint_gh_access_token_${uid}`, githubAccessToken);
+    }
+    if (githubUsername && uid) {
+      localStorage.setItem(`codeprint_gh_username_${uid}`, githubUsername);
+    }
+
     await authService.negotiateToken(uid, userEmail, accountType, name, payload.company_name as string);
   };
 
@@ -95,6 +124,63 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialAccountType = 'st
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Google Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGithubSignIn = async () => {
+    setLoading(true);
+    setError('');
+    localStorage.setItem('codeprint_active_role', accountType);
+
+    try {
+      const result = await signInWithPopup(auth, githubProvider);
+      const user = result.user;
+
+      // Extract GitHub username from additionalUserInfo
+      const additionalInfo = (result as any).additionalUserInfo || (result as any)._tokenResponse;
+      const githubUsername =
+        additionalInfo?.username ||
+        additionalInfo?.screenName ||
+        user.providerData.find(p => p.providerId === 'github.com')?.displayName ||
+        '';
+
+      // Extract GitHub OAuth access token
+      const credential = GithubAuthProvider.credentialFromResult(result);
+      const githubAccessToken = credential?.accessToken || null;
+
+      // Extract avatar from GitHub profile
+      const avatarUrl = user.photoURL || null;
+
+      await upsertProfile(
+        user.uid,
+        user.email,
+        user.displayName || githubUsername || 'GitHub User',
+        githubUsername,
+        avatarUrl,
+        githubAccessToken
+      );
+
+      onSuccess(accountType);
+      onClose();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        const code = (err as any).code || '';
+        if (code === 'auth/operation-not-allowed') {
+          setError(
+            'GitHub OAuth is not enabled in Firebase Console. Please enable it under Authentication > Sign-in method > GitHub.'
+          );
+        } else if (err.message.includes('account-exists-with-different-credential') || code === 'auth/account-exists-with-different-credential') {
+          setError(
+            'An account already exists with the same email. Please sign in with Google or email first, then connect GitHub from your Profile page.'
+          );
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('GitHub Authentication failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -227,18 +313,37 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialAccountType = 'st
 
           <div className="mt-4 flex items-center gap-3">
             <hr className="flex-1 border-stone-border" />
-            <span className="text-xs text-slate-gray font-medium uppercase tracking-wider">Or</span>
+            <span className="text-xs text-slate-gray font-medium uppercase tracking-wider">Or continue with</span>
             <hr className="flex-1 border-stone-border" />
           </div>
 
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="mt-4 w-full bg-white text-deep-graphite border border-stone-border py-2.5 rounded-md font-medium hover:bg-warm-white transition-colors flex justify-center items-center gap-2"
-          >
-            Continue with Google
-          </button>
+          {/* Social OAuth Buttons */}
+          <div className="mt-4 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full bg-white text-deep-graphite border border-stone-border py-2.5 rounded-md font-medium hover:bg-warm-white transition-colors flex justify-center items-center gap-2"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+
+            <button
+              type="button"
+              onClick={handleGithubSignIn}
+              disabled={loading}
+              className="w-full bg-[#24292F] text-white border border-[#24292F] py-2.5 rounded-md font-medium hover:bg-[#1B1F23] transition-colors flex justify-center items-center gap-2"
+            >
+              <GithubIcon className="w-5 h-5" />
+              Continue with GitHub
+            </button>
+          </div>
 
           <div className="mt-6 text-center text-sm text-slate-gray">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}

@@ -184,25 +184,44 @@ export const recruitmentService = {
   getApplications: async (filter?: { studentId?: string; recruitmentId?: string; companyId?: string }): Promise<Application[]> => {
     const stored = localStorage.getItem(STORAGE_KEY_APPS);
     let localApps: Application[] = stored ? JSON.parse(stored) : [];
+    const storedJobs = localStorage.getItem(STORAGE_KEY_JOBS);
+    const localJobs: Recruitment[] = storedJobs ? JSON.parse(storedJobs) : [...SAMPLE_RECRUITMENTS];
+
+    const enrichApp = (app: any): Application => {
+      const rec = app.recruitments || localJobs.find(j => j.id === app.recruitment_id);
+      return {
+        ...app,
+        recruitments: rec,
+        profiles: app.profiles || {
+          id: app.student_id,
+          full_name: app.profiles?.full_name || 'Candidate Profile',
+          email: app.profiles?.email || 'applicant@codeprint.ai',
+          talent_score: app.profiles?.talent_score || app.ai_match_score || 85,
+          ai_profile_score: app.profiles?.ai_profile_score || 88
+        }
+      } as Application;
+    };
+
+    localApps = localApps.map(enrichApp);
 
     try {
-      let query = supabase.from('applications').select('*, recruitments(*), profiles(*)').order('applied_at', { ascending: false });
+      let query = supabase.from('applications').select('*, recruitments(*), profiles:student_id(*)').order('applied_at', { ascending: false });
       if (filter?.studentId) query = query.eq('student_id', filter.studentId);
       if (filter?.recruitmentId) query = query.eq('recruitment_id', filter.recruitmentId);
 
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
-        const dbApps = data as Application[];
+      if (!error && data) {
+        const dbApps = (data as Application[]).map(enrichApp);
         localApps.forEach(la => {
           if (!dbApps.some(da => da.id === la.id)) dbApps.push(la);
         });
-        return filterApplications(dbApps, filter);
+        return filterApplications(dbApps, filter, localJobs);
       }
     } catch (e) {
       console.warn('Offline application retrieval fallback:', e);
     }
 
-    return filterApplications(localApps, filter);
+    return filterApplications(localApps, filter, localJobs);
   },
 
   submitApplication: async (appData: Omit<Application, 'id' | 'applied_at'>): Promise<Application> => {
@@ -258,6 +277,21 @@ export const recruitmentService = {
     } catch { /* offline fallback */ }
   },
 
+  updateApplicationFields: async (appId: string, updates: Record<string, any>): Promise<void> => {
+    const stored = localStorage.getItem(STORAGE_KEY_APPS);
+    if (stored) {
+      const apps: Application[] = JSON.parse(stored);
+      const target = apps.find(a => a.id === appId);
+      if (target) {
+        Object.assign(target, updates);
+        localStorage.setItem(STORAGE_KEY_APPS, JSON.stringify(apps));
+      }
+    }
+    try {
+      await supabase.from('applications').update(updates).eq('id', appId);
+    } catch { /* offline fallback */ }
+  },
+
   generateAiQuestions: (skills: string[]): MockQuestion[] => {
     const defaultQs: MockQuestion[] = [
       {
@@ -301,12 +335,15 @@ export const recruitmentService = {
   }
 };
 
-function filterApplications(apps: Application[], filter?: { studentId?: string; recruitmentId?: string; companyId?: string }): Application[] {
+function filterApplications(apps: Application[], filter?: { studentId?: string; recruitmentId?: string; companyId?: string }, jobs?: Recruitment[]): Application[] {
   if (!filter) return apps;
   return apps.filter(a => {
     if (filter.studentId && a.student_id !== filter.studentId) return false;
     if (filter.recruitmentId && a.recruitment_id !== filter.recruitmentId) return false;
-    if (filter.companyId && a.recruitments && a.recruitments.company_id !== filter.companyId) return false;
+    if (filter.companyId) {
+      const compId = a.recruitments?.company_id || jobs?.find(j => j.id === a.recruitment_id)?.company_id;
+      if (compId && compId !== filter.companyId) return false;
+    }
     return true;
   });
 }

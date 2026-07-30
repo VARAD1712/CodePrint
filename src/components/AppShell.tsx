@@ -27,8 +27,9 @@ const studentNavGroups: NavGroup[] = [
     items: [
       { to: '/home', label: 'Recruitment Home', icon: Home, desc: 'Overview of AI recruitment pipeline and opportunities' },
       { to: '/dashboard', label: 'Student Dashboard', icon: LayoutDashboard, desc: 'Your comprehensive GitHub and application analytics' },
-      { to: '/career', label: 'Career AI Advisor', icon: Sparkles, desc: 'Real-time Perplexity AI market guidance and roadmaps' },
+      { to: '/career', label: 'Career AI Advisor', icon: Sparkles, desc: 'Real-time tech market guidance and personalized roadmaps' },
       { to: '/interview', label: 'AI Mock Interviewer', icon: Zap, desc: 'Interactive voice and code AI interviewer simulator' },
+      { to: '/hackathons', label: 'Hackathons & Contests', icon: Award, desc: 'Submit projects for verified Git code complexity scoring & direct hiring' },
     ],
   },
   {
@@ -63,6 +64,7 @@ const companyNavGroups: NavGroup[] = [
       { to: '/company/copilot', label: 'Candidate Discovery AI', icon: Users, desc: 'Semantic discovery and talent match engine' },
       { to: '/company/interviews', label: 'AI Interview Agent', icon: Briefcase, desc: 'Automated technical screening and interview bots' },
       { to: '/company/ppt-analyser', label: 'AI PPT Analyser', icon: FileText, desc: 'Audit student presentation decks and proposals' },
+      { to: '/company/hackathons', label: 'Hackathon Talent Hub', icon: Award, desc: 'Real-time project leaderboard with dynamic complexity & freshness sliders' },
     ],
   },
   {

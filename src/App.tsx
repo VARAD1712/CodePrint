@@ -16,6 +16,8 @@ import { CompanyInterviews } from './pages/company/CompanyInterviews';
 import { PitchAnalysis } from './pages/company/PitchAnalysis';
 import { Portfolio } from './pages/Portfolio';
 import { CompanyPortfolio } from './pages/company/CompanyPortfolio';
+import { CinematicHero } from './pages/CinematicHero';
+import { HackathonHub } from './pages/HackathonHub';
 import { AppShell } from './components/AppShell';
 import { PageNavigation } from './components/PageNavigation';
 import { auth } from './services/firebase';
@@ -71,7 +73,11 @@ function AuthenticatedApp() {
         const storedHeadline = localStorage.getItem(`codeprint_linkedin_headline_${uid}`) || '';
         const storedGhResult = localStorage.getItem(`codeprint_gh_result_${uid}`);
 
-        const finalGhUsername = data?.github_username || storedGhUsername;
+        const oauthGhUsername = auth.currentUser?.providerData?.find(p => p.providerId === 'github.com')?.displayName || (firebaseUser as any)?.providerData?.find((p: any) => p.providerId === 'github.com')?.displayName || '';
+        const finalGhUsername = data?.github_username || storedGhUsername || oauthGhUsername;
+        if (finalGhUsername && !storedGhUsername) {
+          localStorage.setItem(`codeprint_gh_username_${uid}`, finalGhUsername);
+        }
         const finalLinkedinUrl = data?.linkedin_url || storedLinkedin;
         const finalHeadline = data?.linkedin_headline || storedHeadline;
 
@@ -96,6 +102,8 @@ function AuthenticatedApp() {
             talentScore: data.talent_score,
             breakdown: data.github_breakdown || null,
             stats: data.github_stats,
+            freshness: (data as any).github_freshness || null,
+            explainability: (data as any).github_explainability || null,
             avatarUrl: data.avatar_url || null,
             username: finalGhUsername,
           });
@@ -120,6 +128,8 @@ function AuthenticatedApp() {
         console.error('Error fetching profile:', err);
         const activeRole = localStorage.getItem('codeprint_active_role');
         const storedGhUsername = localStorage.getItem(`codeprint_gh_username_${uid}`) || '';
+        const oauthGhUsername = auth.currentUser?.providerData?.find(p => p.providerId === 'github.com')?.displayName || (firebaseUser as any)?.providerData?.find((p: any) => p.providerId === 'github.com')?.displayName || '';
+        const finalGhUsername = storedGhUsername || oauthGhUsername;
         const storedLinkedin = localStorage.getItem(`codeprint_linkedin_url_${uid}`) || '';
         const storedHeadline = localStorage.getItem(`codeprint_linkedin_headline_${uid}`) || '';
         const storedGhResult = localStorage.getItem(`codeprint_gh_result_${uid}`);
@@ -129,7 +139,7 @@ function AuthenticatedApp() {
           email: firebaseUser.email || '',
           full_name: firebaseUser.displayName || 'User',
           role: (activeRole as UserRole) || 'student',
-          github_username: storedGhUsername,
+          github_username: finalGhUsername,
           linkedin_url: storedLinkedin,
           linkedin_headline: storedHeadline,
         });
@@ -180,12 +190,12 @@ function AuthenticatedApp() {
       }
     }
 
-    // Prefetch Perplexity Career Guidance insights into localStorage when intending to view Career AI
+    // Prefetch AI Career Guidance insights into localStorage when intending to view Career AI
     if (routePath.includes('career')) {
       const cacheKey = `codeprint_career_guidance_${profile.id}`;
       if (!localStorage.getItem(cacheKey)) {
         try {
-          const res = await axios.post('/api/career-guidance-perplexity', {
+          const res = await axios.post('/api/career-guidance', {
             targetRole: 'Full Stack AI Developer',
             skills: profile.github_stats || 'React, Node, Python, AI',
             experienceLevel: 'Student / Fresher'
@@ -265,6 +275,7 @@ function AuthenticatedApp() {
           <Route path="company/copilot" element={<CandidateDiscovery />} />
           <Route path="company/interviews" element={<CompanyInterviews profile={profile} />} />
           <Route path="company/ppt-analyser" element={<PitchAnalysis profile={profile} />} />
+          <Route path="company/hackathons" element={<HackathonHub />} />
           <Route
             path="company/settings"
             element={
@@ -336,6 +347,10 @@ function AuthenticatedApp() {
           element={<AiInterview profile={profile} />}
         />
         <Route
+          path="hackathons"
+          element={<HackathonHub />}
+        />
+        <Route
           path="settings"
           element={
             <Settings
@@ -358,6 +373,9 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/cinematic" element={<CinematicHero />} />
+        <Route path="/hero" element={<CinematicHero />} />
+        <Route path="/streaming" element={<CinematicHero />} />
         <Route path="/*" element={<AuthenticatedApp />} />
       </Routes>
     </Router>

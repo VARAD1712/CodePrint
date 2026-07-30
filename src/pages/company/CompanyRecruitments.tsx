@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Loader2, Users, Sparkles, Briefcase, Calendar, Sliders, X, Brain, Zap, HelpCircle } from 'lucide-react';
+import { Plus, Loader2, Users, Sparkles, Briefcase, Calendar, Sliders, X, Brain, HelpCircle } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { recruitmentService } from '../../services/recruitmentService';
 import type { Profile, Recruitment, MockQuestion } from '../../types';
@@ -53,12 +53,6 @@ export function CompanyRecruitments({ profile }: CompanyRecruitmentsProps) {
     );
     setRecruitments(withCounts);
     setLoading(false);
-  };
-
-  const handleGenerateAiQuestions = () => {
-    const skillList = skills.split(',').map(s => s.trim()).filter(Boolean);
-    const generated = recruitmentService.generateAiQuestions(skillList.length > 0 ? skillList : ['Enterprise AI System', 'React & TypeScript', 'Distributed Architecture']);
-    setMockQuestions([...mockQuestions, ...generated]);
   };
 
   const handleAddCustomQuestion = () => {
@@ -397,15 +391,8 @@ export function CompanyRecruitments({ profile }: CompanyRecruitmentsProps) {
                      <div className="flex gap-2">
                        <button
                          type="button"
-                         onClick={handleGenerateAiQuestions}
-                         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-200 transition-all"
-                       >
-                         <Zap className="w-3.5 h-3.5 fill-current" /> Auto-Generate with AI
-                       </button>
-                       <button
-                         type="button"
                          onClick={handleAddCustomQuestion}
-                         className="px-4 py-2 bg-white hover:bg-gray-50 border border-indigo-300 text-indigo-700 rounded-xl font-bold text-xs transition-all"
+                         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-indigo-200"
                        >
                          + Add Manual Question
                        </button>

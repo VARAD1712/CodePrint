@@ -12,7 +12,7 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [data, setData] = useState({
-    provider: 'Perplexity AI (Online Intelligence)',
+    provider: 'CodePrint AI Market Advisor',
     marketInsights: '',
     skillGaps: [
       { skill: 'React Native', current: 20, required: 80 },
@@ -40,7 +40,7 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     try {
-      const res = await axios.post('/api/career-guidance-perplexity', {
+      const res = await axios.post('/api/career-guidance', {
         profile,
         skills: profile.skills || ['React', 'TypeScript', 'Node.js', 'Python'],
         role: 'Full Stack & AI Systems Developer'
@@ -58,7 +58,7 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
         }));
       }
     } catch (error) {
-      console.error('Perplexity AI market analysis failed, using fallback metrics:', error);
+      console.error('AI market analysis failed, using fallback metrics:', error);
     } finally {
       setIsAnalyzing(false);
       setHasAnalyzed(true);
@@ -78,12 +78,12 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
           
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-lavender/10 text-lavender rounded-full text-xs font-semibold mb-4">
             <Sparkles className="w-3.5 h-3.5" />
-            Integrated with Perplexity AI Online Research
+            Integrated with Tech Market AI Intelligence
           </div>
           <Brain className="w-16 h-16 text-lavender mx-auto mb-6" />
           <h1 className="text-3xl font-bold text-ink mb-4">AI Career Guidance & Market Intelligence</h1>
           <p className="text-ink-light max-w-xl mx-auto mb-8">
-            Our hybrid Perplexity AI engine queries live tech industry demand, GitHub stats, and salary trends to craft your real-time career roadmap and skill gap evaluation.
+            Our hybrid AI analysis engine evaluates live tech industry demand, GitHub stats, and salary trends to craft your custom career roadmap and skill gap evaluation.
           </p>
           
           <button
@@ -92,7 +92,7 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
             className="px-8 py-4 bg-ink text-white rounded-xl font-medium hover:bg-ink/90 transition-all shadow-md shadow-ink/10 flex items-center gap-3 mx-auto relative z-10 cursor-pointer"
           >
             {isAnalyzing ? (
-              <><Sparkles className="w-5 h-5 animate-pulse text-lavender-light" /> Querying Perplexity AI...</>
+              <><Sparkles className="w-5 h-5 animate-pulse text-lavender-light" /> Querying AI Advisor...</>
             ) : (
               <><Target className="w-5 h-5" /> Generate Live Career Path</>
             )}
@@ -120,7 +120,7 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
           disabled={isAnalyzing}
           className="px-4 py-2 bg-cream text-ink font-medium rounded-lg border border-border hover:bg-cream-dark transition-colors flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
-          <Sparkles className="w-4 h-4 text-lavender" /> {isAnalyzing ? 'Re-analyzing...' : 'Re-analyze via Perplexity'}
+          <Sparkles className="w-4 h-4 text-lavender" /> {isAnalyzing ? 'Re-analyzing...' : 'Re-analyze Career Path'}
         </button>
       </div>
 

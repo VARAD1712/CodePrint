@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Check, X, ExternalLink, Calendar, MessageSquare, ChevronDown, ChevronUp, Search, Sparkles, CheckCircle2, ShieldCheck, Columns, List, ArrowRight, ArrowLeft as ArrowLeftIcon, Briefcase } from 'lucide-react';
+import { Loader2, Check, X, ExternalLink, Calendar, MessageSquare, ChevronDown, ChevronUp, Search, Sparkles, CheckCircle2, ShieldCheck, Columns, List, ArrowRight, ArrowLeft as ArrowLeftIcon, Briefcase, Clock } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { apiClient } from '../../services/apiClient';
+import { recruitmentService } from '../../services/recruitmentService';
 import { LinkedinIcon, GithubIcon } from '../../components/BrandIcons';
 import type { Profile, Application, PipelineStage } from '../../types';
 import { FraudAnalysisModal } from '../../components/FraudAnalysisModal';
+import { ApplicationTimelineModal } from '../../components/ApplicationTimelineModal';
 
 interface CompanyApplicantsProps {
   profile: Profile;
@@ -37,10 +39,23 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
   const [auditingApplicant, setAuditingApplicant] = useState<ApplicantRow | null>(null);
+  const [timelineApp, setTimelineApp] = useState<ApplicantRow | null>(null);
 
 
   useEffect(() => {
     loadApplicants();
+
+    // Supabase Realtime automatic subscription for incoming applications and updates
+    const channel = supabase
+      .channel('company_applicants_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
+        loadApplicants();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profile.id]);
 
   const showNotification = (msg: string) => {
@@ -50,29 +65,10 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
 
   const loadApplicants = async () => {
     setLoading(true);
-    const { data: recs } = await supabase
-      .from('recruitments')
-      .select('id')
-      .eq('company_id', profile.id);
+    const data = await recruitmentService.getApplications({ companyId: profile.id });
+    const sorted = data.sort((a, b) => (b.ai_match_score || 0) - (a.ai_match_score || 0));
 
-    const recIds = (recs || []).map(r => r.id);
-    if (recIds.length === 0) {
-      setApplicants([]);
-      setLoading(false);
-      return;
-    }
-
-    const { data } = await supabase
-      .from('applications')
-      .select(`
-        *,
-        profiles:student_id(id, full_name, email, github_username, linkedin_url, talent_score, ai_profile_score, github_stats, avatar_url),
-        recruitments:recruitment_id(title)
-      `)
-      .in('recruitment_id', recIds)
-      .order('ai_match_score', { ascending: false, nullsFirst: false });
-
-    const apps = (data || []).map((app: any) => ({
+    const apps = sorted.map((app: any) => ({
       ...app,
       pipeline_stage: app.pipeline_stage || (app.status === 'accepted' ? 'Offered' : app.status === 'rejected' ? 'Rejected' : 'Applied')
     })) as ApplicantRow[];
@@ -101,13 +97,17 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
       setApplicants(prev => prev.map(a => a.id === app.id ? { ...a, pipeline_stage: targetStage, status: targetStage === 'Offered' ? 'accepted' : targetStage === 'Rejected' ? 'rejected' : a.status } : a));
       
       try {
-        await apiClient.patch(`/api/applications/${app.id}/stage`, { pipeline_stage: targetStage });
+        await apiClient.post(`/api/applications/${app.id}/transition`, { stage: targetStage, actor_role: 'company', notes: `Moved via Recruiter ATS Dashboard` });
       } catch {
-        // Fallback to Supabase direct
-        await supabase.from('applications').update({ 
-          pipeline_stage: targetStage,
-          ...(targetStage === 'Offered' ? { status: 'accepted' } : targetStage === 'Rejected' ? { status: 'rejected' } : {})
-        }).eq('id', app.id);
+        try {
+          await apiClient.patch(`/api/applications/${app.id}/stage`, { pipeline_stage: targetStage });
+        } catch {
+          // Fallback to unified sync service
+          await recruitmentService.updateApplicationFields(app.id, { 
+            pipeline_stage: targetStage,
+            ...(targetStage === 'Offered' ? { status: 'accepted' } : targetStage === 'Rejected' ? { status: 'rejected' } : {})
+          });
+        }
       }
 
       const companyName = profile.company_name || profile.full_name;
@@ -136,7 +136,7 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
   const handleSaveNotes = async (appId: string) => {
     setUpdating(appId);
     try {
-      await supabase.from('applications').update({ recruiter_notes: notes[appId] }).eq('id', appId);
+      await recruitmentService.updateApplicationFields(appId, { recruiter_notes: notes[appId] });
       showNotification('Recruiter evaluation notes secured.');
     } finally {
       setUpdating(null);
@@ -150,7 +150,7 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
       if (!dateStr) return;
       
       const dateObj = new Date(dateStr);
-      await supabase.from('applications').update({ interview_date: dateObj.toISOString() }).eq('id', app.id);
+      await recruitmentService.updateApplicationFields(app.id, { interview_date: dateObj.toISOString() });
       
       const companyName = profile.company_name || profile.full_name;
       const roleTitle = app.recruitments?.title || 'the role';
@@ -299,12 +299,21 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
 
                             {/* Quick Action Badges */}
                             <div className="flex items-center justify-between gap-1 mt-3 pt-2 border-t border-border-soft/60 text-xs">
-                              <button
-                                onClick={() => setAuditingApplicant(app)}
-                                className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1"
-                              >
-                                <ShieldCheck className="w-3 h-3" /> Audit Shield
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setAuditingApplicant(app)}
+                                  className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1"
+                                >
+                                  <ShieldCheck className="w-3 h-3" /> Shield
+                                </button>
+                                <button
+                                  onClick={() => setTimelineApp(app)}
+                                  className="text-[10px] font-bold text-ink-light bg-cream hover:bg-cream-dark px-2 py-1 rounded-lg border border-border-soft transition-colors flex items-center gap-1"
+                                  title="View state machine event timeline"
+                                >
+                                  <Clock className="w-3 h-3 text-sage" /> Timeline
+                                </button>
+                              </div>
 
                               <div className="flex items-center gap-1">
                                 {stageIndex > 0 && (
@@ -523,6 +532,15 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
           candidateEmail={auditingApplicant.profiles?.email}
           mockTestScore={auditingApplicant.ai_match_score || 92}
           onClose={() => setAuditingApplicant(null)}
+        />
+      )}
+
+      {timelineApp && (
+        <ApplicationTimelineModal
+          applicationId={timelineApp.id || ''}
+          candidateName={timelineApp.profiles?.full_name || 'Verified Applicant'}
+          roleTitle={timelineApp.recruitments?.title || 'Open Position'}
+          onClose={() => setTimelineApp(null)}
         />
       )}
     </div>

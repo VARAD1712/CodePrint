@@ -1,22 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User as UserIcon, Loader2, RefreshCw, FileText, Presentation, ExternalLink, Sparkles, GitBranch, Calendar, Award, ShieldCheck, Plus, Trash2, Zap } from 'lucide-react';
+import { User as UserIcon, Loader2, RefreshCw, FileText, Presentation, ExternalLink, Sparkles, GitBranch, Calendar, Award, ShieldCheck, Plus, Trash2, Zap, Link2, Unlink } from 'lucide-react';
 import axios from 'axios';
 import { supabase } from '../services/supabase';
+import { auth, githubProvider } from '../services/firebase';
+import { linkWithPopup, GithubAuthProvider, unlink } from 'firebase/auth';
 
-import { LinkedinIcon } from '../components/BrandIcons';
+import { GithubIcon, LinkedinIcon } from '../components/BrandIcons';
 import { TalentScoreRing } from '../components/TalentScoreRing';
 import { ScoreBreakdown } from '../components/ScoreBreakdown';
 import { GitHubStatsGrid } from '../components/GitHubStatsGrid';
 import type { HackathonAchievement } from '../types';
-
-function GithubIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-    </svg>
-  );
-}
 
 const languageColors: Record<string, string> = {
   JavaScript: '#F7DF1E', TypeScript: '#3178C6', Python: '#3776AB', Java: '#ED8B00',
@@ -43,6 +37,12 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
   );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
+  const [isLinkingGithub, setIsLinkingGithub] = useState(false);
+  const [githubLinkError, setGithubLinkError] = useState('');
+  const [isUnlinkingGithub, setIsUnlinkingGithub] = useState(false);
+
+  // Check if GitHub is linked via Firebase OAuth
+  const isGithubLinkedViaOAuth = auth.currentUser?.providerData?.some(p => p.providerId === 'github.com') || false;
 
   const [pitchText, setPitchText] = useState('');
   const [isAnalyzingPitch, setIsAnalyzingPitch] = useState(false);
@@ -167,6 +167,156 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
     }
   };
 
+  // ── GitHub OAuth Link Handler ──
+  const handleLinkGithub = async () => {
+    if (!auth.currentUser || !profile?.id) return;
+    setIsLinkingGithub(true);
+    setGithubLinkError('');
+
+    try {
+      const result = await linkWithPopup(auth.currentUser, githubProvider);
+
+      // Extract GitHub username from the OAuth response
+      const additionalInfo = (result as any).additionalUserInfo || (result as any)._tokenResponse;
+      const extractedUsername =
+        additionalInfo?.username ||
+        additionalInfo?.screenName ||
+        result.user.providerData.find(p => p.providerId === 'github.com')?.displayName ||
+        '';
+
+      // Extract GitHub OAuth access token for API calls
+      const credential = GithubAuthProvider.credentialFromResult(result);
+      const githubAccessToken = credential?.accessToken || null;
+      const avatarUrl = result.user.photoURL || null;
+
+      // Store access token locally
+      if (githubAccessToken) {
+        localStorage.setItem(`codeprint_gh_access_token_${profile.id}`, githubAccessToken);
+      }
+
+      // Update state and Supabase
+      if (extractedUsername) {
+        setGithubUsername(extractedUsername);
+        localStorage.setItem(`codeprint_gh_username_${profile.id}`, extractedUsername);
+
+        await supabase.from('profiles').update({
+          github_username: extractedUsername,
+          avatar_url: avatarUrl || profile.avatar_url,
+        }).eq('id', profile.id);
+
+        setProfile({
+          ...profile,
+          github_username: extractedUsername,
+          avatar_url: avatarUrl || profile.avatar_url,
+        });
+
+        // Auto-trigger analysis after linking
+        setIsLinkingGithub(false);
+        setIsAnalyzing(true);
+        try {
+          const response = await axios.post('/api/analyze-github', { username: extractedUsername });
+          const analysisResult = response.data;
+
+          try {
+            const reposRes = await axios.get(`/api/github-repos/${extractedUsername}`);
+            onReposLoaded(reposRes.data.repos || []);
+          } catch { /* ignore */ }
+
+          await supabase.from('profiles').update({
+            github_username: extractedUsername,
+            talent_score: analysisResult.talentScore,
+            github_stats: analysisResult.stats,
+            github_breakdown: analysisResult.breakdown,
+            github_freshness: analysisResult.freshness || null,
+            github_explainability: analysisResult.explainability || null,
+            avatar_url: analysisResult.avatarUrl || avatarUrl,
+          } as any).eq('id', profile.id);
+
+          localStorage.setItem(`codeprint_gh_result_${profile.id}`, JSON.stringify({
+            talentScore: analysisResult.talentScore,
+            breakdown: analysisResult.breakdown || null,
+            stats: analysisResult.stats,
+            freshness: analysisResult.freshness || null,
+            explainability: analysisResult.explainability || null,
+            avatarUrl: analysisResult.avatarUrl || avatarUrl || null,
+            username: extractedUsername,
+          }));
+
+          setGithubResult(analysisResult);
+          setProfile({
+            ...profile,
+            github_username: extractedUsername,
+            talent_score: analysisResult.talentScore,
+            github_stats: analysisResult.stats,
+            github_breakdown: analysisResult.breakdown,
+            github_freshness: analysisResult.freshness || null,
+            github_explainability: analysisResult.explainability || null,
+            avatar_url: analysisResult.avatarUrl || avatarUrl,
+          });
+        } catch (analyzeErr) {
+          console.warn('Post-link analysis failed:', analyzeErr);
+          setAnalysisError('GitHub linked successfully! Analysis failed — try "Recalculate" later.');
+        } finally {
+          setIsAnalyzing(false);
+        }
+      }
+    } catch (err: unknown) {
+      const errorCode = (err as any)?.code;
+      if (err instanceof Error) {
+        if (errorCode === 'auth/credential-already-in-use') {
+          setGithubLinkError('This GitHub account is already linked to another Codeprint account.');
+        } else if (errorCode === 'auth/provider-already-linked') {
+          setGithubLinkError('GitHub is already connected to your account.');
+        } else if (errorCode === 'auth/operation-not-allowed') {
+          setGithubLinkError('GitHub OAuth is not enabled in your Firebase Console. Enable GitHub under Authentication > Sign-in method.');
+        } else if (errorCode === 'auth/popup-closed-by-user') {
+          // User closed the popup — no error needed
+        } else {
+          setGithubLinkError(err.message);
+        }
+      } else {
+        setGithubLinkError('Failed to connect GitHub account.');
+      }
+    } finally {
+      setIsLinkingGithub(false);
+    }
+  };
+
+  // ── GitHub OAuth Unlink Handler ──
+  const handleUnlinkGithub = async () => {
+    if (!auth.currentUser || !profile?.id) return;
+    setIsUnlinkingGithub(true);
+
+    try {
+      await unlink(auth.currentUser, 'github.com');
+      localStorage.removeItem(`codeprint_gh_access_token_${profile.id}`);
+      localStorage.removeItem(`codeprint_gh_username_${profile.id}`);
+      localStorage.removeItem(`codeprint_gh_result_${profile.id}`);
+
+      await supabase.from('profiles').update({
+        github_username: null,
+        talent_score: null,
+        github_stats: null,
+        github_breakdown: null,
+      }).eq('id', profile.id);
+
+      setGithubUsername('');
+      setGithubResult(null);
+      setProfile({
+        ...profile,
+        github_username: undefined,
+        talent_score: null,
+        github_stats: null,
+        github_breakdown: null,
+      });
+    } catch (err) {
+      console.error('Failed to unlink GitHub:', err);
+      setGithubLinkError('Failed to unlink GitHub. Please try again.');
+    } finally {
+      setIsUnlinkingGithub(false);
+    }
+  };
+
   const handleAnalyzeGithub = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!githubUsername.trim() || !profile?.id) return;
@@ -191,8 +341,10 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
           talent_score: result.talentScore,
           github_stats: result.stats,
           github_breakdown: result.breakdown,
+          github_freshness: result.freshness || null,
+          github_explainability: result.explainability || null,
           avatar_url: result.avatarUrl
-        })
+        } as any)
         .eq('id', profile.id);
 
       if (dbError) console.warn("Supabase update warning:", dbError.message);
@@ -202,6 +354,8 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
         talentScore: result.talentScore,
         breakdown: result.breakdown || null,
         stats: result.stats,
+        freshness: result.freshness || null,
+        explainability: result.explainability || null,
         avatarUrl: result.avatarUrl || null,
         username: githubUsername,
       }));
@@ -213,6 +367,8 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
         talent_score: result.talentScore,
         github_stats: result.stats,
         github_breakdown: result.breakdown,
+        github_freshness: result.freshness || null,
+        github_explainability: result.explainability || null,
         avatar_url: result.avatarUrl
       });
 
@@ -367,51 +523,109 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
         transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.05 }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-4"
       >
-        {/* GitHub */}
+        {/* GitHub — OAuth-first with manual fallback */}
         <div className="soft-card rounded-xl p-6">
           <h3 className="text-sm font-semibold text-ink mb-1 flex items-center gap-2">
             <GithubIcon className="w-4 h-4" />
-            {hasGithubData ? 'Recalculate Score' : 'Connect GitHub'}
+            {hasGithubData ? 'GitHub Connected' : 'Connect GitHub'}
           </h3>
-          <p className="text-xs text-ink-faint mb-4">
-            {hasGithubData ? 'Refresh your score or try a different username.' : 'Enter your GitHub username to calculate your Talent Score.'}
-          </p>
-          <form onSubmit={handleAnalyzeGithub} className="space-y-3">
-            <input
-              type="text"
-              value={githubUsername}
-              onChange={e => setGithubUsername(e.target.value)}
-              placeholder={profile?.github_username || "e.g. torvalds"}
-              className="w-full px-3.5 py-2.5 bg-cream border border-border-soft rounded-xl text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage/40 transition-all"
-            />
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={isAnalyzing || !githubUsername.trim()}
-              className="w-full bg-ink text-cream py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isAnalyzing ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
-              ) : hasGithubData ? (
-                <><RefreshCw className="w-4 h-4" /> Recalculate</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> Calculate Talent Score</>
-              )}
-            </motion.button>
-            <AnimatePresence>
-              {analysisError && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="text-xs text-rose bg-rose-light p-2.5 rounded-lg"
+
+          {/* Connected state: show username, recalculate, and unlink */}
+          {hasGithubData && githubUsername ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                {(profile?.avatar_url || (githubResult as any)?.avatarUrl) && (
+                  <img
+                    src={profile?.avatar_url || (githubResult as any)?.avatarUrl}
+                    alt="GitHub avatar"
+                    className="w-8 h-8 rounded-full border border-emerald-200 flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-emerald-900 truncate">@{githubUsername}</p>
+                  <p className="text-[11px] text-emerald-700 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {isGithubLinkedViaOAuth ? 'OAuth connected' : 'Connected via username'}
+                  </p>
+                </div>
+                <a
+                  href={`https://github.com/${githubUsername}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-600 hover:text-emerald-800 flex-shrink-0"
                 >
-                  {analysisError}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </form>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={(e) => { e.preventDefault(); handleAnalyzeGithub(e as any); }}
+                  disabled={isAnalyzing}
+                  className="flex-1 bg-ink text-cream py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isAnalyzing ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
+                  ) : (
+                    <><RefreshCw className="w-4 h-4" /> Recalculate Score</>
+                  )}
+                </motion.button>
+
+                {isGithubLinkedViaOAuth && (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleUnlinkGithub}
+                    disabled={isUnlinkingGithub}
+                    className="px-3 py-2.5 rounded-xl text-sm font-medium text-rose border border-rose/30 hover:bg-rose-light transition-colors disabled:opacity-40 flex items-center gap-1.5"
+                    title="Disconnect GitHub account"
+                  >
+                    {isUnlinkingGithub ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Not connected: OAuth button + manual fallback */
+            <div className="space-y-3">
+              <p className="text-xs text-ink-faint mb-2">
+                Connect your GitHub account to automatically verify your developer profile and calculate your Talent Score.
+              </p>
+
+              {/* Primary: OAuth Connect Button */}
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleLinkGithub}
+                disabled={isLinkingGithub || isAnalyzing}
+                className="w-full bg-[#24292F] text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-[#1B1F23] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLinkingGithub ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
+                ) : isAnalyzing ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
+                ) : (
+                  <><GithubIcon className="w-4 h-4" /> <Link2 className="w-3.5 h-3.5" /> Connect with GitHub</>
+                )}
+              </motion.button>
+            </div>
+          )}
+
+          {/* Error messages */}
+          <AnimatePresence>
+            {(analysisError || githubLinkError) && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="text-xs text-rose bg-rose-light p-2.5 rounded-lg mt-3"
+              >
+                {githubLinkError || analysisError}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* LinkedIn */}
@@ -478,7 +692,7 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
             </div>
             <div className="lg:col-span-2 soft-card rounded-xl p-6">
               {githubResult.breakdown ? (
-                <ScoreBreakdown breakdown={githubResult.breakdown} />
+                <ScoreBreakdown breakdown={githubResult.breakdown} freshness={githubResult.freshness} explainability={githubResult.explainability} />
               ) : (
                 <div className="flex items-center justify-center h-full text-ink-faint text-sm">
                   Breakdown not available

@@ -16,7 +16,10 @@ export interface Profile {
   ai_profile_summary?: AiProfileSummary | null;
   github_stats?: GitHubStats | null;
   github_breakdown?: ScoreBreakdown | null;
+  github_freshness?: GitHubFreshness | null;
+  github_explainability?: ScoreExplainability | null;
   avatar_url?: string | null;
+  github_access_token?: string | null;
   pitch_score?: number | null;
   pitch_feedback?: PitchFeedback | null;
   company_culture?: string | null;
@@ -29,6 +32,14 @@ export interface Profile {
   portfolio_config?: PortfolioConfig | null;
   fraud_shield_score?: number | null;
   fraud_analysis?: FraudAnalysisReport | null;
+  recruiter_analysis?: RecruiterAnalysis | null;
+  hackathon_submissions?: HackathonSubmission[] | null;
+  innovation_score?: number | null;
+  github_alignment_score?: number | null;
+  trust_alignment_report?: TrustAlignmentReport | null;
+  saved_searches?: SavedSearch[] | null;
+  applications_received?: number | null;
+  unclaimed_shell?: boolean;
   created_at?: string;
 }
 
@@ -121,11 +132,34 @@ export interface GitHubStats {
   recentCommits: number;
 }
 
+export interface GitHubFreshness {
+  status: string;
+  daysSinceLastPush: number;
+  commitVelocity: number;
+  decayMultiplier: number;
+  isCapped: boolean;
+}
+
+export interface ScoreExplanationItem {
+  category: string;
+  impact: 'positive' | 'negative' | 'neutral';
+  title: string;
+  explanation: string;
+  recommendation: string;
+}
+
+export interface ScoreExplainability {
+  summary: string;
+  reasons: ScoreExplanationItem[];
+}
+
 export interface GitHubResult {
   username: string;
   talentScore: number;
   breakdown: ScoreBreakdown;
   stats: GitHubStats;
+  freshness?: GitHubFreshness | null;
+  explainability?: ScoreExplainability | null;
   avatarUrl: string | null;
 }
 
@@ -192,6 +226,12 @@ export interface Application {
   assessment_passed?: boolean | null;
   fraud_risk_level?: 'low' | 'medium' | 'high' | null;
   fraud_analysis?: FraudAnalysisReport | null;
+  resume_url?: string | null;
+  initiated_by?: 'student' | 'recruiter' | string;
+  updated_at?: string;
+  offer_note?: string | null;
+  salary_band?: string | null;
+  events?: ApplicationEvent[];
   recruitments?: Recruitment;
   profiles?: Profile;
 }
@@ -242,5 +282,89 @@ export interface PitchAnalysis {
   business_potential_score: number | null;
   overall_pitch_score: number | null;
   recommendations: string[] | null;
+  created_at: string;
+}
+
+export interface RecruiterAnalysis {
+  talent_score: number;
+  top_skills: string[];
+  skill_depth: Record<string, string>;
+  strengths: string[];
+  red_flags: string[];
+  suggested_roles: string[];
+  summary: string;
+  analyzed_at?: string;
+  provider?: string;
+}
+
+export interface HackathonSubmission {
+  id: string;
+  hackathon_id: string;
+  student_id?: string;
+  event_name?: string;
+  project_title?: string;
+  repo_url?: string;
+  repository_url?: string;
+  demo_url?: string;
+  tech_stack?: string[];
+  team_size?: number;
+  problem_statement?: string;
+  code_quality_score?: number;
+  complexity_score?: number;
+  freshness_score?: number;
+  innovation_score?: number;
+  innovation_rationale?: string;
+  combined_score?: number;
+  submitted_at: string;
+}
+
+export interface HackathonEvent {
+  id: string;
+  title: string;
+  description?: string;
+  problem_statements: string[];
+  start_date: string;
+  end_date?: string;
+  status: 'active' | 'completed' | 'upcoming';
+  created_at: string;
+}
+
+export interface TrustFlaggedClaim {
+  skill: string;
+  claimed_duration: string;
+  github_active_span: string;
+  status: 'verified' | 'flagged' | 'unverifiable';
+  detail: string;
+  advice: string;
+}
+
+export interface TrustAlignmentReport {
+  github_alignment_score: number;
+  flagged_claims: TrustFlaggedClaim[];
+  summary: string;
+  last_checked: string;
+}
+
+export interface SavedSearch {
+  id: string;
+  name: string;
+  filters: {
+    skills?: string[];
+    min_talent_score?: number;
+    min_alignment_score?: number;
+    role_type?: string;
+  };
+  created_at: string;
+}
+
+export interface ApplicationEvent {
+  id: string;
+  application_id: string;
+  event_type: string;
+  from_stage?: string;
+  to_stage?: string;
+  actor_role?: string;
+  notes?: string;
+  description?: string;
   created_at: string;
 }
