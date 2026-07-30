@@ -140,37 +140,37 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
       <motion.div 
         initial={{ opacity: 0, y: 16 }} 
         animate={{ opacity: 1, y: 0 }}
-        className="dark-widget rounded-3xl p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden"
+        className="dark-widget rounded-2xl p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative border border-neutral-800 bg-neutral-900"
       >
-        <div className="absolute top-0 right-0 w-96 h-96 bg-sage/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 text-xs font-bold uppercase tracking-wider text-sage mb-3 border border-white/10">
-            <Sparkles className="w-3.5 h-3.5" /> Centralized AI Hiring Authority & ATS
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-neutral-800 text-xs font-semibold text-neutral-300 mb-3">
+            <span>Enterprise ATS & Hiring Command Console</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
-            Welcome, {profile.company_name || profile.full_name?.split(' ')[0]} 👋
+          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+            Hiring Command Console
           </h1>
-          <p className="text-white/70 text-sm mt-2 max-w-xl">
-            Streamlined recruitment powered by secure JWT session management, automated matchmaking, and data analytics.
+          <p className="text-neutral-400 text-sm mt-1.5 max-w-xl">
+            Centralized applicant tracking, automated competency verification, and pipeline evaluation analytics.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 relative z-10">
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-5 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-lg font-semibold text-xs transition-colors border ${
               activeTab === 'analytics' 
-                ? 'bg-white text-ink shadow-lg' 
-                : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'
+                ? 'bg-white text-ink border-white' 
+                : 'bg-neutral-800 text-neutral-200 hover:bg-neutral-700 border-neutral-700'
             }`}
           >
-            <BarChart3 className="w-4 h-4 text-sage" /> Pipeline Analytics
+            Pipeline Analytics
           </button>
           <button
-            onClick={() => navigate('/company/match-engine')}
-            className="bg-sage hover:bg-sage/90 text-white font-bold px-5 py-3 rounded-2xl flex items-center gap-2 transition-all shadow-lg shadow-sage/20 text-sm"
+            onClick={() => navigate('/company/copilot')}
+            className="bg-neutral-100 hover:bg-white text-neutral-900 font-semibold px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors text-xs"
           >
-            <Sparkles className="w-4 h-4" /> AI Match Engine <ArrowRight className="w-4 h-4" />
+            <span>Talent ATS Search</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </motion.div>

@@ -11,29 +11,36 @@ interface CareerGuidanceProps {
 export function CareerGuidance({ profile }: CareerGuidanceProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+
+  const studentSkills = profile.skills && profile.skills.length > 0 
+    ? profile.skills 
+    : (profile.github_stats?.languages && profile.github_stats.languages.length > 0
+      ? profile.github_stats.languages 
+      : ['React', 'TypeScript', 'Node.js', 'Python']);
+
   const [data, setData] = useState({
     provider: 'CodePrint AI Market Advisor',
     marketInsights: '',
     skillGaps: [
-      { skill: 'React Native', current: 20, required: 80 },
-      { skill: 'System Design', current: 40, required: 90 },
-      { skill: 'GraphQL', current: 30, required: 70 },
-      { skill: 'AWS', current: 50, required: 85 },
+      { skill: `Advanced ${studentSkills[0] || 'Web'} Architecture`, current: 60, required: 90 },
+      { skill: `Enterprise ${studentSkills[1] || 'Software'} Engineering`, current: 50, required: 85 },
+      { skill: 'Autonomous AI Agent System Design', current: 35, required: 80 },
+      { skill: 'Cloud Native Infrastructure & CI/CD', current: 40, required: 75 },
     ],
     recommendations: [
-      { title: 'Advanced System Design', platform: 'Educative', type: 'Course' },
-      { title: 'AWS Certified Solutions Architect', platform: 'Amazon', type: 'Certification' },
-      { title: 'GraphQL with Apollo', platform: 'Udemy', type: 'Course' },
+      { title: `Mastering Production ${studentSkills[0] || 'Frontend'}`, platform: 'Frontend Masters', type: 'Specialization' },
+      { title: 'Building Autonomous AI Workflows', platform: 'DeepLearning.AI', type: 'Course' },
+      { title: 'AWS Certified Solutions Architect', platform: 'Amazon Web Services', type: 'Certification' },
     ],
     roadmap: [
-      { year: 'Year 1', role: 'Frontend Engineer', milestone: 'Master React & Next.js ecosystem' },
-      { year: 'Year 2-3', role: 'Full Stack Developer', milestone: 'Integrate Node.js & Cloud services' },
-      { year: 'Year 4-5', role: 'Senior Software Engineer', milestone: 'Lead architecture & system design' },
+      { year: 'Phase 1 (Months 1-3)', role: `${studentSkills[0] || 'Developer'} Engineer`, milestone: `Master ${studentSkills.slice(0, 3).join(', ')} production patterns` },
+      { year: 'Phase 2 (Months 4-12)', role: 'Senior Full Stack Engineer', milestone: 'Lead core architecture & scalable web implementations' },
+      { year: 'Phase 3 (Years 2-3)', role: 'Lead Technical Architect', milestone: 'Design distributed high-throughput enterprise systems' },
     ],
     salary: {
       current: '$85,000',
-      predicted: '$120,000',
-      timeline: '24 months'
+      predicted: '$135,000',
+      timeline: '18 months'
     }
   });
 
@@ -42,8 +49,8 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
     try {
       const res = await axios.post('/api/career-guidance', {
         profile,
-        skills: profile.skills || ['React', 'TypeScript', 'Node.js', 'Python'],
-        role: 'Full Stack & AI Systems Developer'
+        skills: studentSkills,
+        role: profile.linkedin_headline || 'Full Stack & AI Systems Developer'
       });
       if (res.data) {
         setData(prev => ({
@@ -71,30 +78,27 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }}
-          className="text-center bg-white rounded-3xl p-12 shadow-sm border border-border-soft relative overflow-hidden"
+          className="text-center bg-white rounded-2xl p-10 border border-border-soft space-y-6"
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-lavender/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-sky/5 rounded-full blur-3xl -ml-32 -mb-32"></div>
-          
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-lavender/10 text-lavender rounded-full text-xs font-semibold mb-4">
-            <Sparkles className="w-3.5 h-3.5" />
-            Integrated with Tech Market AI Intelligence
+          <div className="w-14 h-14 bg-neutral-100 text-neutral-800 rounded-xl border border-neutral-200 flex items-center justify-center mx-auto">
+            <Target className="w-6 h-6" />
           </div>
-          <Brain className="w-16 h-16 text-lavender mx-auto mb-6" />
-          <h1 className="text-3xl font-bold text-ink mb-4">AI Career Guidance & Market Intelligence</h1>
-          <p className="text-ink-light max-w-xl mx-auto mb-8">
-            Our hybrid AI analysis engine evaluates live tech industry demand, GitHub stats, and salary trends to craft your custom career roadmap and skill gap evaluation.
-          </p>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-ink">Competence Benchmark Advisory</h1>
+            <p className="text-ink-light text-sm max-w-xl mx-auto leading-relaxed">
+              Quantitative evaluation of developer skill profiles against real-time technical hiring demands, salary indexing, and competency progression milestones.
+            </p>
+          </div>
           
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing}
-            className="px-8 py-4 bg-ink text-white rounded-xl font-medium hover:bg-ink/90 transition-all shadow-md shadow-ink/10 flex items-center gap-3 mx-auto relative z-10 cursor-pointer"
+            className="px-6 py-3 bg-neutral-900 text-white rounded-xl text-sm font-semibold hover:bg-neutral-800 transition-colors inline-flex items-center gap-2"
           >
             {isAnalyzing ? (
-              <><Sparkles className="w-5 h-5 animate-pulse text-lavender-light" /> Querying AI Advisor...</>
+              <><span>Processing Benchmark Data...</span></>
             ) : (
-              <><Target className="w-5 h-5" /> Generate Live Career Path</>
+              <><span>Generate Competence Benchmark</span></>
             )}
           </button>
         </motion.div>
@@ -104,23 +108,22 @@ export function CareerGuidance({ profile }: CareerGuidanceProps) {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-lavender/10 text-lavender rounded-full text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            Powered by {data.provider}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-soft pb-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center px-2.5 py-0.5 bg-neutral-100 border border-neutral-300 rounded text-xs font-semibold text-neutral-800">
+            <span>Provider: {data.provider}</span>
           </div>
-          <h1 className="text-2xl font-bold text-ink">Your Career Profile</h1>
-          <p className="text-ink-light text-sm max-w-2xl">
-            {data.marketInsights ? `📈 Real-time Market Insight: ${data.marketInsights}` : 'AI-generated insights based on your skills and market trends.'}
+          <h1 className="text-2xl font-bold text-ink">Competence Benchmark Report</h1>
+          <p className="text-ink-light text-sm max-w-2xl leading-relaxed">
+            {data.marketInsights ? `Market Telemetry: ${data.marketInsights}` : 'Competency evaluation based on repository metrics and industry hiring demand.'}
           </p>
         </div>
         <button 
           onClick={handleAnalyze}
           disabled={isAnalyzing}
-          className="px-4 py-2 bg-cream text-ink font-medium rounded-lg border border-border hover:bg-cream-dark transition-colors flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 bg-white text-ink font-semibold text-xs rounded-lg border border-border-soft hover:bg-cream transition-colors self-start sm:self-auto"
         >
-          <Sparkles className="w-4 h-4 text-lavender" /> {isAnalyzing ? 'Re-analyzing...' : 'Re-analyze Career Path'}
+          {isAnalyzing ? 'Updating Analytics...' : 'Refresh Competence Benchmark'}
         </button>
       </div>
 

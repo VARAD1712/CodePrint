@@ -91,70 +91,67 @@
     background-size: 256px 256px;
   }
 
-  /* Frosted glass card */
+  /* Clean minimalist card */
   .glass-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(232, 230, 225, 0.8);
-    box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05), 0 2px 8px -2px rgba(0,0,0,0.03);
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+    background: #FFFFFF;
+    border: 1px solid #E8E6E1;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   .glass-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px -4px rgba(0,0,0,0.1), 0 4px 14px -2px rgba(0,0,0,0.05);
-    border-color: rgba(0, 0, 0, 0.18);
+    border-color: #D1D1CB;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
 
   /* Soft card */
   .soft-card {
     background: #FFFFFF;
     border: 1px solid #E8E6E1;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.03);
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    transition: border-color 0.15s ease;
   }
   .soft-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.07), 0 20px 42px rgba(0,0,0,0.06);
-    border-color: #D1D1CB;
+    border-color: #C2C2BA;
   }
 
-  /* Interactive button glow and feel */
+  /* Interactive button */
   .interactive-btn {
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s ease;
   }
   .interactive-btn:active {
-    transform: scale(0.98);
+    opacity: 0.95;
   }
 
-  /* Premium interactive badge */
+  /* Minimal professional badges */
   .badge-emerald {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.2) 100%);
-    color: #047857;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: #E8F5E9;
+    color: #1A7042;
+    border: 1px solid #C8E6C9;
   }
   .badge-amber {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.2) 100%);
-    color: #B45309;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: #FFF8E1;
+    color: #B26A00;
+    border: 1px solid #FFE082;
   }
   .badge-rose {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.2) 100%);
-    color: #B91C1C;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: #FFEBEE;
+    color: #B71C1C;
+    border: 1px solid #FFCDD2;
   }
   .badge-indigo {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(79, 70, 229, 0.2) 100%);
-    color: #4338CA;
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: #E8EAF6;
+    color: #283593;
+    border: 1px solid #C5CAE9;
   }
 
-  /* Dark enterprise widget header */
+  /* Dark enterprise panel */
   .dark-widget {
-    background: linear-gradient(145deg, #1A1A1A 0%, #262626 100%);
+    background: #171717;
     color: #FAFAF8;
-    border: 1px solid #333333;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    border: 1px solid #262626;
+    border-radius: 16px;
   }
 
   /* ── Cinematic Movie/Streaming Hero Utilities ── */

@@ -11,34 +11,22 @@ interface PortfolioProps {
 }
 
 export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioProps) {
-  void githubRepos;
   const [isEditing, setIsEditing] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Build featured repos from actual GitHub data
+  const featuredRepoNames = githubRepos.slice(0, 3).map(r => r.name);
 
-  // Default / stored config
+  // Default / stored config — NO fake projects
   const defaultConfig: PortfolioConfig = profile.portfolio_config || (
     localStorage.getItem(`codeprint_portfolio_${profile.id}`)
       ? JSON.parse(localStorage.getItem(`codeprint_portfolio_${profile.id}`)!)
       : {
-          title: 'Senior Autonomous Systems & Full-Stack AI Architect',
-          bio: 'Passionate computer scientist engineering resilient generative AI systems, high-performance distributed architectures, and intuitive interactive web experiences.',
+          title: profile.linkedin_headline || `${profile.full_name || 'Developer'}'s Portfolio`,
+          bio: '',
           theme: 'dark_obsidian',
-          featured_repos: ['CodePrint', 'AI-Agent-OS', 'Vector-Search-Engine'],
-          custom_projects: [
-            {
-              title: 'Autonomous Multi-Agent IDE Assistant',
-              description: 'Designed an asynchronous agent framework using Gemini Flash 2.5 with zero-latency streaming execution and automatic syntax healing.',
-              link: 'https://github.com/codeprint-demo/agent-ide',
-              tech_stack: ['TypeScript', 'Python', 'WebSockets', 'TailwindCSS']
-            },
-            {
-              title: 'Realtime Enterprise Recruitment & Fraud Shield',
-              description: 'Built a dual-tier developer recruitment portal featuring live algorithmic qualification mock tests and focus-loss anti-cheat heuristics.',
-              link: 'https://github.com/codeprint-demo/recruitment-shield',
-              tech_stack: ['React', 'Vite', 'Supabase', 'Framer Motion']
-            }
-          ],
+          featured_repos: featuredRepoNames,
+          custom_projects: [],
           show_hackathons: true
         }
   );

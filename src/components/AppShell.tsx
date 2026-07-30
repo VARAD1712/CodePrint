@@ -23,54 +23,54 @@ interface NavGroup {
 
 const studentNavGroups: NavGroup[] = [
   {
-    title: '🎯 Recruitment & Career AI',
+    title: 'Candidate Evaluation Pipeline',
     items: [
-      { to: '/home', label: 'Recruitment Home', icon: Home, desc: 'Overview of AI recruitment pipeline and opportunities' },
-      { to: '/dashboard', label: 'Student Dashboard', icon: LayoutDashboard, desc: 'Your comprehensive GitHub and application analytics' },
-      { to: '/career', label: 'Career AI Advisor', icon: Sparkles, desc: 'Real-time tech market guidance and personalized roadmaps' },
-      { to: '/interview', label: 'AI Mock Interviewer', icon: Zap, desc: 'Interactive voice and code AI interviewer simulator' },
-      { to: '/hackathons', label: 'Hackathons & Contests', icon: Award, desc: 'Submit projects for verified Git code complexity scoring & direct hiring' },
+      { to: '/home', label: 'Open Opportunities & Pipeline', icon: Home, desc: 'Overview of verified hiring positions and candidate status' },
+      { to: '/dashboard', label: 'Candidate Performance Console', icon: LayoutDashboard, desc: 'Telemetry metrics and assessment status' },
+      { to: '/career', label: 'Competence Benchmark Advisory', icon: Sparkles, desc: 'Technical skill gap evaluation and professional milestones' },
+      { to: '/interview', label: 'Structured Technical Evaluation', icon: Zap, desc: 'Interactive conversational assessment engine' },
+      { to: '/hackathons', label: 'Competitive Achievements & Certifications', icon: Award, desc: 'Submit achievement records for credibility analysis' },
     ],
   },
   {
-    title: '📁 Talent & Credentials',
+    title: 'Professional Credentials',
     items: [
-      { to: '/profile', label: 'Profile & Evaluation', icon: User, desc: 'GitHub talent scoring and verified LinkedIn analysis' },
-      { to: '/portfolio', label: 'Talent Portfolio', icon: Award, desc: 'Showcase achievements, hackathons, and certifications' },
-      { to: '/projects', label: 'Code & Projects', icon: FolderGit2, desc: 'AI-analyzed repository metrics and code hygiene' },
-      { to: '/resume', label: 'AI Resume Builder', icon: FileText, desc: 'Generate recruiter-ready verified resumes automatically' },
+      { to: '/profile', label: 'Developer Assessment Profile', icon: User, desc: 'Verified competence scores and profile credentials' },
+      { to: '/portfolio', label: 'Verified Engineering Portfolio', icon: Award, desc: 'Showcase repository history and project impacts' },
+      { to: '/projects', label: 'Repository & Telemetry Index', icon: FolderGit2, desc: 'Codebase hygiene and quantitative repository analysis' },
+      { to: '/resume', label: 'Professional CV Synthesis', icon: FileText, desc: 'Automated document structuring and profile export' },
     ],
   },
   {
-    title: '⚙️ Account',
+    title: 'System Settings',
     items: [
-      { to: '/settings', label: 'Settings & Integrations', icon: Settings, desc: 'Manage profile links and account preferences' },
+      { to: '/settings', label: 'Account Preferences', icon: Settings, desc: 'Account parameters and integration options' },
     ],
   },
 ];
 
 const companyNavGroups: NavGroup[] = [
   {
-    title: '🏢 Enterprise Core',
+    title: 'Enterprise Command Center',
     items: [
-      { to: '/company/dashboard', label: 'Recruitment Dashboard', icon: LayoutDashboard, desc: 'Enterprise overview of candidate pipelines' },
-      { to: '/company/profile', label: 'Company Profile', icon: User, desc: 'Manage your employer branding and job listings' },
-      { to: '/company/portfolio', label: 'Employer Tech Hub', icon: Building2, desc: 'Engineering stack and culture portfolio' },
+      { to: '/company/dashboard', label: 'Hiring Command Console', icon: LayoutDashboard, desc: 'Executive candidate progression analytics' },
+      { to: '/company/profile', label: 'Employer Organization Profile', icon: User, desc: 'Manage enterprise branding and recruitment profiles' },
+      { to: '/company/portfolio', label: 'Employer Culture Repository', icon: Building2, desc: 'Manage open assessments and technical stacks' },
     ],
   },
   {
-    title: '🤖 AI Intelligence Suite',
+    title: 'Candidate Assessment Suite',
     items: [
-      { to: '/company/copilot', label: 'Candidate Discovery AI', icon: Users, desc: 'Semantic discovery and talent match engine' },
-      { to: '/company/interviews', label: 'AI Interview Agent', icon: Briefcase, desc: 'Automated technical screening and interview bots' },
-      { to: '/company/ppt-analyser', label: 'AI PPT Analyser', icon: FileText, desc: 'Audit student presentation decks and proposals' },
-      { to: '/company/hackathons', label: 'Hackathon Talent Hub', icon: Award, desc: 'Real-time project leaderboard with dynamic complexity & freshness sliders' },
+      { to: '/company/copilot', label: 'Talent Discovery & ATS Search', icon: Users, desc: 'Semantic candidate search and skill match analysis' },
+      { to: '/company/interviews', label: 'Interview Assessment Console', icon: Briefcase, desc: 'Review automated conversational screening transcripts' },
+      { to: '/company/ppt-analyser', label: 'Presentation Deck Analysis', icon: FileText, desc: 'Perform slide-by-slide technical audits' },
+      { to: '/company/hackathons', label: 'Candidate Leaderboard & Assessments', icon: Award, desc: 'Evaluate applicant projects via quantitative scoring sliders' },
     ],
   },
   {
-    title: '⚙️ Account',
+    title: 'System Security & Settings',
     items: [
-      { to: '/company/settings', label: 'Enterprise Settings', icon: Settings, desc: 'Account configuration and security' },
+      { to: '/company/settings', label: 'System Security & Settings', icon: Settings, desc: 'Manage administrative roles and access controls' },
     ],
   },
 ];
@@ -189,8 +189,8 @@ export const AppShell = React.memo(function AppShell({
                 )}
               </div>
               <div className="px-4 py-2.5 bg-cream border-t border-border-soft text-xs text-ink-faint flex items-center justify-between">
-                <span>⚡ Tip: Hovering items prefetches AI analysis automatically</span>
-                <span className="font-semibold text-ink-light">Codeprint AI OS</span>
+                <span>Tip: Hovering items prefetches data automatically</span>
+                <span className="font-semibold text-ink-light">Codeprint Platform</span>
               </div>
             </motion.div>
           </div>
@@ -315,13 +315,13 @@ export const AppShell = React.memo(function AppShell({
               </button>
             </div>
 
-            {/* Quick AI Command Button */}
+            {/* Command Console Button */}
             <button
               onClick={() => setCmdOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-cream border border-border-soft hover:border-ink/30 rounded-xl text-xs font-semibold text-ink-light hover:text-ink hover:bg-white shadow-xs transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 bg-cream border border-border-soft hover:border-ink/30 rounded-xl text-xs font-semibold text-ink-light hover:text-ink hover:bg-white transition-all"
             >
               <Command className="w-3.5 h-3.5 text-ink-faint" />
-              <span className="hidden sm:inline">Quick AI Launcher</span>
+              <span className="hidden sm:inline">Command Console</span>
               <kbd className="px-1.5 py-0.5 bg-white border border-border-soft rounded text-[10px] font-mono text-ink-faint">⌘K / Ctrl+K</kbd>
             </button>
           </div>

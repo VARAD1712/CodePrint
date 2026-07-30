@@ -281,7 +281,7 @@ export function CompanyPortfolio({ profile, setProfile }: CompanyPortfolioProps)
             </div>
           </div>
 
-          {/* Active Job Roles Section */}
+          {/* Active Job Roles Section with Management Actions */}
           <div className="pt-8 border-t border-border-soft space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -289,31 +289,53 @@ export function CompanyPortfolio({ profile, setProfile }: CompanyPortfolioProps)
                   <Briefcase className="w-6 h-6 text-indigo-600" /> Active Open Recruitments & Assessments
                 </h3>
                 <p className="text-xs text-ink-light font-semibold mt-1">
-                  Verified open engineering positions currently inviting candidate mock tests and technical evaluations.
+                  Manage published engineering positions. Toggle job visibility to control candidate applications.
                 </p>
               </div>
             </div>
 
             {openJobs.length === 0 ? (
               <div className="p-10 bg-cream/30 rounded-2xl border border-dashed border-border-soft text-center">
-                <p className="text-xs font-semibold text-ink-faint">No active openings published yet. Navigate to Job Openings to launch a qualification assessment pipeline.</p>
+                <p className="text-xs font-semibold text-ink-faint">No openings published yet. Launch a recruitment pipeline from the dashboard!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {openJobs.map((rec) => (
                   <div key={rec.id} className="p-6 rounded-3xl border border-border-soft bg-white hover:shadow-xl transition-all flex flex-col justify-between space-y-4 group">
                     <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg">
-                        {rec.role_type}
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg">
+                          {rec.role_type}
+                        </span>
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+                          rec.status === 'open' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-rose-100 text-rose-900 border-rose-300'
+                        }`}>
+                          ● {rec.status}
+                        </span>
+                      </div>
                       <h4 className="text-lg font-extrabold text-ink mt-2 group-hover:text-indigo-600 transition-colors">{rec.title}</h4>
                       <p className="text-xs text-ink-light mt-1.5 line-clamp-2 leading-relaxed">{rec.description}</p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-border-soft text-xs font-black text-ink-faint">
+                    <div className="flex items-center justify-between pt-3 border-t border-border-soft text-xs font-black">
                       <span className="flex items-center gap-1 text-emerald-700">
-                        <ShieldCheck className="w-4 h-4" /> Qualification Mock Test Active ({rec.mock_test?.passing_percentage || 70}% Cutoff)
+                        <ShieldCheck className="w-4 h-4" /> Qualification Test ({rec.mock_test?.passing_percentage || 70}% Pass)
                       </span>
+
+                      <button
+                        onClick={async () => {
+                          const newStatus = rec.status === 'open' ? 'closed' : 'open';
+                          await recruitmentService.updateRecruitment(rec.id, { status: newStatus });
+                          loadJobs();
+                        }}
+                        className={`px-3 py-1.5 rounded-xl font-extrabold text-[11px] transition-colors cursor-pointer ${
+                          rec.status === 'open' 
+                            ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200' 
+                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                        }`}
+                      >
+                        {rec.status === 'open' ? 'Pause / Close Job' : 'Publish / Re-open Job'}
+                      </button>
                     </div>
                   </div>
                 ))}

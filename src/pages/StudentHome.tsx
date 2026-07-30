@@ -38,7 +38,8 @@ export function StudentHome({ profile }: StudentHomeProps) {
       recruitmentService.getRecruitments(),
       recruitmentService.getApplications({ studentId: profile.id })
     ]);
-    setRecruitments(jobs);
+    // Only show jobs that are published (status = 'open') by companies
+    setRecruitments(jobs.filter(j => j.status === 'open'));
     setApplications(apps);
     setLoading(false);
   };
@@ -148,17 +149,17 @@ export function StudentHome({ profile }: StudentHomeProps) {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 200, damping: 24 }}
-        className="bg-gradient-to-r from-ink via-ink to-indigo-950 text-white p-8 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden border border-white/10"
+        className="bg-neutral-900 text-white p-8 rounded-2xl border border-neutral-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative"
       >
         <div className="space-y-2 relative z-10 max-w-2xl">
-          <span className="text-xs font-black uppercase tracking-widest px-3 py-1 bg-white/10 rounded-full text-indigo-300 backdrop-blur-md inline-block">
-            Tier-1 Talent Portal
-          </span>
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-            Open Recruitments & Assessments
+          <div className="inline-flex items-center px-3 py-1 rounded-md bg-neutral-800 text-xs font-semibold text-neutral-300">
+            <span>Enterprise Recruitment Pipeline</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Open Positions & Assessments
           </h1>
-          <p className="text-indigo-200 text-xs sm:text-sm leading-relaxed font-medium">
-            Browse live opportunities posted by verified tech enterprises. Pass company qualification mock tests to immediately verify your expertise and boost application prominence.
+          <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed">
+            Review active hiring mandates published by verified engineering organizations. Complete structured assessment milestones to establish verified competency scores.
           </p>
         </div>
       </motion.div>

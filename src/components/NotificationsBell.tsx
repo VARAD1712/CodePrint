@@ -50,7 +50,7 @@ export const NotificationsBell = React.memo(function NotificationsBell({ userId,
               className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl border border-border-soft shadow-lg z-50"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-border-soft">
-                <h3 className="text-sm font-semibold text-ink">Notifications</h3>
+                <h3 className="text-sm font-semibold text-ink">Assessment & Alert Log</h3>
                 <div className="flex items-center gap-2">
                   {unread > 0 && (
                     <button onClick={markAllRead} className="text-xs text-sage hover:underline">
@@ -64,7 +64,7 @@ export const NotificationsBell = React.memo(function NotificationsBell({ userId,
               </div>
 
               {notifications.length === 0 ? (
-                <p className="px-4 py-8 text-sm text-ink-faint text-center">No notifications yet</p>
+                <p className="px-4 py-8 text-sm text-ink-faint text-center">No active alert logs</p>
               ) : (
                 <ul className="divide-y divide-border-soft">
                   {notifications.map(n => (

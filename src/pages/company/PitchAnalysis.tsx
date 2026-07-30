@@ -24,13 +24,15 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
     businessPotential: number;
     overallScore: number;
     recommendations: string[];
+    slidesBreakdown?: { slideNumber: number; title: string; score: number; feedback: string }[];
   }>({
     innovationScore: 88,
     techFlexibility: 85,
     presentationQuality: 82,
     businessPotential: 89,
     overallScore: 86,
-    recommendations: []
+    recommendations: [],
+    slidesBreakdown: []
   });
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +41,6 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
       setFileName(file.name);
       setIsUploading(true);
       
-      // Simulate document upload & trigger dynamic backend scoring
       setTimeout(async () => {
         setIsUploading(false);
         setIsAnalyzing(true);
@@ -55,7 +56,7 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
             setReport(res.data);
           }
         } catch (err) {
-          console.warn('PPT analysis error, utilizing resilient analysis:', err);
+          console.warn('PPT analysis error:', err);
         } finally {
           setIsAnalyzing(false);
           setHasReport(true);
@@ -85,8 +86,8 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
   return (
     <div className="space-y-8 pb-20">
       <div>
-        <h1 className="text-2xl font-bold text-ink">AI Pitch & PPT Analyser</h1>
-        <p className="text-sm text-ink-light mt-1">Upload candidate pitch decks for automated AI scoring and feedback.</p>
+        <h1 className="text-2xl font-bold text-ink">AI Pitch Deck & Presentation Analyser</h1>
+        <p className="text-sm text-ink-light mt-1">Upload pitch decks for automated slide-by-slide AI evaluation and feedback.</p>
       </div>
 
       {!hasReport && !isAnalyzing && !isUploading && (
@@ -108,7 +109,7 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
           />
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 bg-ink text-white px-8 py-4 rounded-xl font-medium hover:bg-ink/90 transition-all shadow-md shadow-ink/10"
+            className="flex items-center gap-2 bg-ink text-white px-8 py-4 rounded-xl font-medium hover:bg-ink/90 transition-all shadow-md shadow-ink/10 cursor-pointer"
           >
             <Upload className="w-5 h-5" /> Browse Files
           </button>
@@ -119,18 +120,18 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
         <div className="bg-white rounded-3xl p-12 flex flex-col items-center justify-center text-center border border-border-soft shadow-sm py-32">
           <Loader2 className="w-12 h-12 text-sage animate-spin mb-6" />
           <h2 className="text-2xl font-bold text-ink mb-2">
-            {isUploading ? 'Uploading Document...' : 'AI Analyser Engine Running...'}
+            {isUploading ? 'Uploading Document...' : 'AI Slide-by-Slide Analyser Engine Running...'}
           </h2>
           <p className="text-ink-light max-w-md">
             {isUploading 
               ? `Uploading ${fileName} securely to our servers.`
-              : `Extracting text, analyzing structure, and evaluating ${fileName} across multiple business metrics.`}
+              : `Extracting slides, evaluating visual structure, and scoring ${fileName} slide by slide.`}
           </p>
           
           {isAnalyzing && (
             <div className="mt-8 flex gap-4 text-xs font-bold text-ink-faint uppercase tracking-wider">
-               <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-lavender" /> Assessing Innovation</span>
-               <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-sky" /> Calculating Potential</span>
+               <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-lavender" /> Assessing Slide Layouts</span>
+               <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-sky" /> Computing Potential</span>
             </div>
           )}
         </div>
@@ -149,22 +150,19 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
                  {report.overallScore} <span className="text-2xl text-white/50 font-medium">/ 100</span>
                </div>
                <p className="mt-4 text-white/80 max-w-md">
-                 Analyzed <span className="font-bold text-white">{fileName}</span>. The pitch shows strong architectural execution and explainable investment metrics.
+                 Analyzed <span className="font-bold text-white">{fileName}</span>. Evaluated slide-by-slide with explainable recommendations.
                </p>
              </div>
              
              <div className="flex gap-4">
-               <button className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-medium transition-colors border border-white/10 flex items-center gap-2">
-                 <FileText className="w-4 h-4" /> Download PDF
-               </button>
                <button 
                  onClick={() => {
                    setHasReport(false);
                    setFileName(null);
                  }}
-                 className="bg-sage hover:bg-sage-dark px-6 py-3 rounded-xl font-medium transition-colors text-white"
+                 className="bg-sage hover:bg-sage-dark px-6 py-3 rounded-xl font-medium transition-colors text-white cursor-pointer"
                >
-                 Analyze Another
+                 Analyze Another Deck
                </button>
              </div>
           </div>
@@ -176,9 +174,32 @@ export function PitchAnalysis({ profile: _profile }: PitchAnalysisProps) {
              <ScoreCard title="Business Potential" score={report.businessPotential} icon={Briefcase} colorClass="bg-sage/20 text-sage" />
           </div>
 
+          {/* Individual Slide-by-Slide Breakdown */}
+          {report.slidesBreakdown && report.slidesBreakdown.length > 0 && (
+            <div className="bg-white rounded-3xl p-8 border border-border-soft shadow-sm space-y-6">
+              <h3 className="text-lg font-extrabold text-ink flex items-center gap-2">
+                <Presentation className="w-5 h-5 text-indigo-600" /> Individual Slide-by-Slide Evaluation
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {report.slidesBreakdown.map((slide) => (
+                  <div key={slide.slideNumber} className="p-5 rounded-2xl border border-border-soft bg-cream/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase rounded-full">
+                        Slide {slide.slideNumber}
+                      </span>
+                      <span className="text-sm font-black text-ink">{slide.score}/100</span>
+                    </div>
+                    <h4 className="font-extrabold text-ink text-sm">{slide.title}</h4>
+                    <p className="text-xs text-ink-light leading-relaxed font-medium">{slide.feedback}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl p-8 border border-border-soft shadow-sm">
             <h3 className="text-lg font-bold text-ink mb-6 flex items-center gap-2">
-              <BarChart className="w-5 h-5 text-ink-light" /> AI Recommendations for Improvement
+              <BarChart className="w-5 h-5 text-ink-light" /> Strategic AI Recommendations
             </h3>
             
             <div className="space-y-4">

@@ -1,17 +1,36 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, FolderGit2 } from 'lucide-react';
+import { Search, Filter, FolderGit2, Loader2, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { ProjectCard } from '../components/ProjectCard';
+import { GithubIcon } from '../components/BrandIcons';
 
 interface ProjectsProps {
   repos: any[];
   githubUsername: string;
 }
 
-export function Projects({ repos, githubUsername }: ProjectsProps) {
+export function Projects({ repos: initialRepos, githubUsername }: ProjectsProps) {
+  const navigate = useNavigate();
+  const [repos, setRepos] = useState<any[]>(initialRepos);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [langFilter, setLangFilter] = useState('');
   const [sortBy, setSortBy] = useState<'stars' | 'updated'>('stars');
+
+  useEffect(() => {
+    setRepos(initialRepos);
+    if (initialRepos.length === 0 && githubUsername) {
+      setLoading(true);
+      axios.get(`/api/github-repos/${githubUsername}`)
+        .then(res => {
+          if (res.data?.repos) setRepos(res.data.repos);
+        })
+        .catch(err => console.warn('Projects fetch error:', err))
+        .finally(() => setLoading(false));
+    }
+  }, [initialRepos, githubUsername]);
 
   // Extract unique languages
   const languages = useMemo(() => {
@@ -37,6 +56,15 @@ export function Projects({ repos, githubUsername }: ProjectsProps) {
     return filtered;
   }, [repos, search, langFilter, sortBy]);
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-sage mb-3" />
+        <p className="text-sm font-semibold text-ink-light">Fetching GitHub repositories for @{githubUsername}...</p>
+      </div>
+    );
+  }
+
   if (repos.length === 0) {
     return (
       <div className="space-y-6">
@@ -45,15 +73,25 @@ export function Projects({ repos, githubUsername }: ProjectsProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 24 }}
         >
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Projects</h1>
-          <p className="text-ink-light text-sm mt-1">Your GitHub repositories</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Code & Projects</h1>
+          <p className="text-ink-light text-sm mt-1">Your public GitHub repositories</p>
         </motion.div>
-        <div className="soft-card rounded-xl p-10 text-center">
-          <FolderGit2 className="w-10 h-10 text-ink-faint mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-ink mb-1">No projects yet</h3>
-          <p className="text-sm text-ink-light">
-            Connect your GitHub on the Profile page to see your repositories here.
-          </p>
+        <div className="soft-card rounded-2xl p-12 text-center flex flex-col items-center space-y-4 border border-dashed border-border-soft">
+          <div className="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center">
+            <FolderGit2 className="w-8 h-8 text-sage" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-ink">No GitHub repositories linked yet</h3>
+            <p className="text-sm text-ink-light max-w-sm mx-auto mt-1">
+              Connect your GitHub username on your Profile page to view your repositories and automatic skill analysis.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/profile')}
+            className="px-6 py-3 bg-ink text-cream rounded-xl text-xs font-bold hover:bg-ink/90 transition-colors inline-flex items-center gap-2 cursor-pointer shadow-md"
+          >
+            <GithubIcon className="w-4 h-4" /> Connect GitHub on Profile <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     );

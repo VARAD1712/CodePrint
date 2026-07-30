@@ -4,25 +4,28 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const STUDENT_PAGES = [
-  { path: '/home', label: 'Recruitment Home' },
-  { path: '/dashboard', label: 'Dashboard' },
-  { path: '/career', label: 'Career AI Advisor' },
-  { path: '/interview', label: 'AI Mock Interviewer' },
-  { path: '/profile', label: 'Profile Evaluation' },
-  { path: '/portfolio', label: 'Talent Portfolio' },
-  { path: '/projects', label: 'Code & Projects' },
-  { path: '/resume', label: 'AI Resume Builder' },
-  { path: '/settings', label: 'Settings' },
+  { path: '/home', label: 'Open Opportunities & Pipeline' },
+  { path: '/dashboard', label: 'Candidate Performance Console' },
+  { path: '/career', label: 'Competence Benchmark Advisory' },
+  { path: '/interview', label: 'Structured Technical Evaluation' },
+  { path: '/hackathons', label: 'Competitive Achievements & Certifications' },
+  { path: '/profile', label: 'Developer Assessment Profile' },
+  { path: '/ppt-analyser', label: 'Presentation Deck Analysis' },
+  { path: '/portfolio', label: 'Verified Engineering Portfolio' },
+  { path: '/projects', label: 'Repository & Telemetry Index' },
+  { path: '/resume', label: 'Professional CV Synthesis' },
+  { path: '/settings', label: 'Account Preferences' },
 ];
 
 const COMPANY_PAGES = [
-  { path: '/company/dashboard', label: 'Recruitment Dashboard' },
-  { path: '/company/profile', label: 'Company Profile' },
-  { path: '/company/portfolio', label: 'Employer Tech Hub' },
-  { path: '/company/copilot', label: 'Candidate Discovery AI' },
-  { path: '/company/interviews', label: 'AI Interview Agent' },
-  { path: '/company/ppt-analyser', label: 'AI PPT Analyser' },
-  { path: '/company/settings', label: 'Enterprise Settings' },
+  { path: '/company/dashboard', label: 'Hiring Command Console' },
+  { path: '/company/profile', label: 'Employer Organization Profile' },
+  { path: '/company/portfolio', label: 'Employer Culture Repository' },
+  { path: '/company/copilot', label: 'Talent Discovery & ATS Search' },
+  { path: '/company/interviews', label: 'Interview Assessment Console' },
+  { path: '/company/ppt-analyser', label: 'Presentation Deck Analysis' },
+  { path: '/company/hackathons', label: 'Candidate Leaderboard & Assessments' },
+  { path: '/company/settings', label: 'System Security & Settings' },
 ];
 
 interface PageNavigationProps {

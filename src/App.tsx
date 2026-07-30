@@ -275,7 +275,7 @@ function AuthenticatedApp() {
           <Route path="company/copilot" element={<CandidateDiscovery />} />
           <Route path="company/interviews" element={<CompanyInterviews profile={profile} />} />
           <Route path="company/ppt-analyser" element={<PitchAnalysis profile={profile} />} />
-          <Route path="company/hackathons" element={<HackathonHub />} />
+          <Route path="company/hackathons" element={<HackathonHub role="company" />} />
           <Route
             path="company/settings"
             element={
@@ -347,8 +347,12 @@ function AuthenticatedApp() {
           element={<AiInterview profile={profile} />}
         />
         <Route
+          path="ppt-analyser"
+          element={<PitchAnalysis profile={profile} />}
+        />
+        <Route
           path="hackathons"
-          element={<HackathonHub />}
+          element={<HackathonHub role="student" />}
         />
         <Route
           path="settings"
