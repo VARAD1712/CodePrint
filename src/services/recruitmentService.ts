@@ -114,7 +114,6 @@ export const recruitmentService = {
       let query = supabase
         .from('recruitments')
         .select('*, profiles:company_id(id, full_name, company_name)')
-        .eq('status', 'open')
         .order('created_at', { ascending: false });
 
       if (companyId) {
@@ -179,6 +178,19 @@ export const recruitmentService = {
     }
 
     return newJob;
+  },
+
+  updateRecruitment: async (jobId: string, updates: Partial<Recruitment>): Promise<void> => {
+    const stored = localStorage.getItem(STORAGE_KEY_JOBS);
+    let localJobs: Recruitment[] = stored ? JSON.parse(stored) : [...SAMPLE_RECRUITMENTS];
+    const target = localJobs.find(j => j.id === jobId);
+    if (target) {
+      Object.assign(target, updates);
+      localStorage.setItem(STORAGE_KEY_JOBS, JSON.stringify(localJobs));
+    }
+    try {
+      await supabase.from('recruitments').update(updates).eq('id', jobId);
+    } catch { /* offline fallback */ }
   },
 
   getApplications: async (filter?: { studentId?: string; recruitmentId?: string; companyId?: string }): Promise<Application[]> => {

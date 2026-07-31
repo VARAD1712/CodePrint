@@ -149,8 +149,11 @@ export interface ScoreExplanationItem {
 }
 
 export interface ScoreExplainability {
-  summary: string;
-  reasons: ScoreExplanationItem[];
+  summary?: string;
+  reasons?: ScoreExplanationItem[];
+  scoreRationale?: string;
+  strengths?: string[];
+  actionableSteps?: string[];
 }
 
 export interface GitHubResult {

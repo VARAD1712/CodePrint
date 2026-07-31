@@ -302,7 +302,7 @@ function AuthenticatedApp() {
         <Route path="home" element={<StudentHome profile={profile} />} />
         <Route
           path="dashboard"
-          element={<Dashboard profile={profile} githubResult={githubResult} repos={repos} />}
+          element={<Dashboard profile={profile} githubResult={githubResult} repos={repos} setGithubResult={setGithubResult} setRepos={setRepos} setProfile={p => setProfile(p)} />}
         />
         <Route
           path="profile"

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { User, Bell, Shield, Save, Check, Link2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '../components/BrandIcons';
 import { auth, githubProvider } from '../services/firebase';
-import { linkWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { linkWithPopup, GoogleAuthProvider, getAdditionalUserInfo } from 'firebase/auth';
 import { supabase } from '../services/supabase';
 
 interface SettingsProps {
@@ -41,8 +41,9 @@ export function Settings({ profile, githubUsername, linkedinUrl, onUpdateGithub,
       const provider = providerName === 'google' ? new GoogleAuthProvider() : githubProvider;
       const res = await linkWithPopup(auth.currentUser, provider);
       if (providerName === 'github') {
-        const additionalInfo = (res as any).additionalUserInfo || (res as any)._tokenResponse;
-        const extractedUsername = additionalInfo?.username || res.user.providerData.find(p => p.providerId === 'github.com')?.displayName;
+        const info = getAdditionalUserInfo(res);
+        const profileData = info?.profile as Record<string, any> | undefined;
+        const extractedUsername = info?.username || profileData?.login || (res as any)._tokenResponse?.screenName || '';
         if (extractedUsername) {
           setGhUser(extractedUsername);
           onUpdateGithub(extractedUsername);

@@ -22,7 +22,7 @@ const SAMPLE_HACKATHONS: HackathonItem[] = [
     id: 'hack_ai_agents',
     title: 'Codeprint Global Autonomous Agents Buildathon',
     sponsor: 'Google Cloud & Codeprint Enterprise',
-    prize_pool: '$25,000 + Direct Executive Interviews',
+    prize_pool: '₹20,00,000 + Direct Executive Interviews',
     deadline: '2026-08-15',
     status: 'active',
     tags: ['AI Agents', 'LLMs', 'PostgreSQL', 'TypeScript']
@@ -31,7 +31,7 @@ const SAMPLE_HACKATHONS: HackathonItem[] = [
     id: 'hack_web_systems',
     title: 'High-Velocity Distributed Systems Challenge',
     sponsor: 'Enterprise FinTech Foundation',
-    prize_pool: '$15,000 + VIP Hiring Track',
+    prize_pool: '₹12,00,000 + VIP Hiring Track',
     deadline: '2026-09-01',
     status: 'active',
     tags: ['Microservices', 'Node.js', 'Distributed DBs']

@@ -6,6 +6,7 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
+  getAdditionalUserInfo,
 } from 'firebase/auth';
 import { X, Loader2, GraduationCap, Building2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
@@ -138,12 +139,14 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialAccountType = 'st
       const result = await signInWithPopup(auth, githubProvider);
       const user = result.user;
 
-      // Extract GitHub username from additionalUserInfo
-      const additionalInfo = (result as any).additionalUserInfo || (result as any)._tokenResponse;
+      // Extract GitHub username correctly using getAdditionalUserInfo in Firebase v9
+      const info = getAdditionalUserInfo(result);
+      const profileData = info?.profile as Record<string, any> | undefined;
       const githubUsername =
-        additionalInfo?.username ||
-        additionalInfo?.screenName ||
-        user.providerData.find(p => p.providerId === 'github.com')?.displayName ||
+        info?.username ||
+        profileData?.login ||
+        (result as any)._tokenResponse?.screenName ||
+        (result as any)._tokenResponse?.username ||
         '';
 
       // Extract GitHub OAuth access token

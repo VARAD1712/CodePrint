@@ -306,15 +306,6 @@ export const AppShell = React.memo(function AppShell({
             </button>
             <span className="font-bold text-ink text-base lg:hidden">Codeprint</span>
             
-            <div className="hidden lg:flex items-center gap-1 border border-border-soft rounded-xl p-0.5 bg-cream">
-              <button onClick={() => navigate(-1)} className="p-1.5 text-ink-faint hover:text-ink hover:bg-cream-dark rounded-lg transition-colors" aria-label="Go back" title="Previous Page">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button onClick={() => navigate(1)} className="p-1.5 text-ink-faint hover:text-ink hover:bg-cream-dark rounded-lg transition-colors" aria-label="Go forward" title="Next Page">
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
             {/* Command Console Button */}
             <button
               onClick={() => setCmdOpen(true)}

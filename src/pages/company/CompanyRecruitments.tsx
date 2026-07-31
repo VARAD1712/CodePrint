@@ -133,18 +133,7 @@ export function CompanyRecruitments({ profile }: CompanyRecruitmentsProps) {
 
   const toggleStatus = async (rec: Recruitment) => {
     const newStatus = rec.status === 'open' ? 'closed' : 'open';
-    try {
-      await supabase.from('recruitments').update({ status: newStatus }).eq('id', rec.id);
-    } catch { /* offline handling */ }
-    const stored = localStorage.getItem('codeprint_recruitments');
-    if (stored) {
-      const parsed: Recruitment[] = JSON.parse(stored);
-      const idx = parsed.findIndex(p => p.id === rec.id);
-      if (idx >= 0) {
-        parsed[idx].status = newStatus;
-        localStorage.setItem('codeprint_recruitments', JSON.stringify(parsed));
-      }
-    }
+    await recruitmentService.updateRecruitment(rec.id, { status: newStatus });
     await loadRecruitments();
   };
 

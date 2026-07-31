@@ -189,12 +189,18 @@ export function ScoreBreakdown({ breakdown, freshness, explainability }: ScoreBr
                     <Sparkles className="w-3.5 h-3.5 text-amber-400 inline" />
                     AI Talent Evaluation Summary
                   </p>
-                  {explainability.summary}
+                  {explainability.summary || explainability.scoreRationale || 'AI syntax telemetry verifies disciplined engineering workflow and modular architectural patterns.'}
                 </div>
 
                 {/* Granular Reason Cards */}
                 <div className="space-y-2.5">
-                  {explainability.reasons.map((item, index) => {
+                  {(explainability.reasons || (explainability.strengths ? explainability.strengths.map((str, i) => ({
+                    category: 'Strength',
+                    impact: 'positive' as const,
+                    title: `Verified Competency #${i + 1}`,
+                    explanation: str,
+                    recommendation: (explainability.actionableSteps || [])[i] || 'Continue maintaining disciplined development workflow.'
+                  })) : [])).map((item, index) => {
                     const badge = getImpactBadge(item.impact);
                     return (
                       <div

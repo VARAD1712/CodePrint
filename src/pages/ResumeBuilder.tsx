@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Loader2, Sparkles, Briefcase, Code2, FolderGit2, BarChart3 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '../components/BrandIcons';
 import axios from 'axios';
-
+import { fetchGithubAnalysis, fetchGithubRepos } from '../services/githubService';
 
 interface ResumeBuilderProps {
   profile: any;
@@ -49,11 +49,11 @@ export function ResumeBuilder({ profile, githubResult, repos, linkedinUrl }: Res
       // Auto-fetch if stats are not loaded in memory yet
       if (!activeStats && ghUser) {
         try {
-          const statsRes = await axios.post('/api/analyze-github', { username: ghUser });
-          if (statsRes.data?.stats) {
-            activeStats = statsRes.data.stats;
-            activeTalentScore = statsRes.data.talentScore || activeTalentScore;
-            activeBreakdown = statsRes.data.breakdown || activeBreakdown;
+          const res = await fetchGithubAnalysis(ghUser);
+          if (res?.stats) {
+            activeStats = res.stats;
+            activeTalentScore = res.talentScore || activeTalentScore;
+            activeBreakdown = res.breakdown || activeBreakdown;
           }
         } catch (e) {
           console.warn('Auto-fetch GitHub stats fallback:', e);
@@ -63,12 +63,9 @@ export function ResumeBuilder({ profile, githubResult, repos, linkedinUrl }: Res
       // Auto-fetch repositories if empty
       if ((!activeRepos || activeRepos.length === 0) && ghUser) {
         try {
-          const reposRes = await axios.get(`/api/github-repos/${ghUser}`);
-          if (reposRes.data?.repos) {
-            activeRepos = reposRes.data.repos;
-          }
+          activeRepos = await fetchGithubRepos(ghUser);
         } catch (e) {
-          console.warn('Auto-fetch repos fallback:', e);
+          console.warn('Auto-fetch GitHub repos fallback:', e);
         }
       }
 
