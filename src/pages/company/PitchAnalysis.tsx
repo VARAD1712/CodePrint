@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Upload, FileText, BarChart, Sparkles, Loader2, AlertCircle, FilePieChart, TrendingUp, Presentation, Briefcase, Zap } from 'lucide-react';
+import { Upload, BarChart, Sparkles, Loader2, AlertCircle, FilePieChart, TrendingUp, Presentation, Briefcase, Zap } from 'lucide-react';
 import type { Profile } from '../../types';
 
 interface PitchAnalysisProps {

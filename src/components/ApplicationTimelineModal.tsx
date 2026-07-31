@@ -23,7 +23,7 @@ export function ApplicationTimelineModal({ applicationId, candidateName, roleTit
         if (res.data?.timeline) {
           setEvents(res.data.timeline);
         }
-      } catch (err) {
+      } catch {
         // Fallback simulated audit log if endpoint offline or no records
         setEvents([
           {

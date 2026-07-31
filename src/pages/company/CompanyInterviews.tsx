@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Video, Star, MessageSquare, ShieldCheck, CheckCircle2, Bot, User } from 'lucide-react';
+import { Video, Star, MessageSquare, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import type { Profile } from '../../types';
 
@@ -110,8 +110,18 @@ export function CompanyInterviews(_props: CompanyInterviewsProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: List of Interviews */}
         <div className="lg:col-span-1 space-y-4">
-          {interviews.map((inv) => (
-            <motion.button
+          {loading ? (
+            <div className="p-8 text-center text-sm text-ink-faint flex flex-col items-center justify-center gap-2 border border-border-soft rounded-xl bg-white">
+              <Loader2 className="w-5 h-5 animate-spin text-sage" />
+              Loading AI interview evaluations...
+            </div>
+          ) : interviews.length === 0 ? (
+            <div className="p-8 text-center text-sm text-ink-faint border border-dashed border-border-soft rounded-xl bg-white">
+              No completed interviews found.
+            </div>
+          ) : (
+            interviews.map((inv) => (
+              <motion.button
               key={inv.id}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -138,7 +148,7 @@ export function CompanyInterviews(_props: CompanyInterviewsProps) {
                 <span className="text-sm font-bold">{inv.confidenceScore}% Match</span>
               </div>
             </motion.button>
-          ))}
+          )))}
         </div>
 
         {/* Right Column: Detailed Report */}

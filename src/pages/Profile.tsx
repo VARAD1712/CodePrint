@@ -67,7 +67,7 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
 
     const savedHeadline = profile?.linkedin_headline || localStorage.getItem(`codeprint_linkedin_headline_${profile?.id}`) || '';
     if (savedHeadline && !linkedinHeadline) setLinkedinHeadline(savedHeadline);
-  }, [profile, githubResult, linkedinUrl]);
+  }, [profile, githubResult, linkedinUrl, githubUsername, linkedinInput, linkedinHeadline]);
 
   // Hackathon Vault State
   const [showHackathonForm, setShowHackathonForm] = useState(false);
@@ -576,7 +576,7 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
           </h3>
 
           {/* Connected state: show username, recalculate, and unlink */}
-          {Boolean(githubUsername || isGithubLinkedViaOAuth || hasGithubData) ? (
+          {(githubUsername || isGithubLinkedViaOAuth || hasGithubData) ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                 {(profile?.avatar_url || (githubResult as any)?.avatarUrl) ? (
@@ -861,6 +861,155 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
           </motion.section>
         )}
       </AnimatePresence>
+
+      {/* ── Hackathon & Competitions Vault ── */}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.18 }}
+        className="soft-card rounded-xl p-6"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber" /> Hackathon & Competitions Vault
+            </h3>
+            <p className="text-xs text-ink-faint mt-0.5">
+              Add achievements to boost your verified talent score and showcase on your portfolio.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowHackathonForm(!showHackathonForm)}
+            className="px-3 py-1.5 bg-ink text-cream rounded-xl text-xs font-medium flex items-center gap-1.5 hover:bg-ink/90 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" /> {showHackathonForm ? 'Cancel' : 'Add Hackathon'}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {showHackathonForm && (
+            <motion.form
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              onSubmit={handleAddAndAnalyzeHackathon}
+              className="mb-6 p-4 bg-cream-dark rounded-xl border border-border-soft space-y-3 overflow-hidden"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  required
+                  value={hackTitle}
+                  onChange={e => setHackTitle(e.target.value)}
+                  placeholder="Project Title (e.g. Autonomous Dev Agent)"
+                  className="w-full px-3 py-2 bg-white border border-border-soft rounded-lg text-xs text-ink focus:outline-none focus:ring-2 focus:ring-sage"
+                />
+                <input
+                  type="text"
+                  required
+                  value={hackEvent}
+                  onChange={e => setHackEvent(e.target.value)}
+                  placeholder="Event Name (e.g. Global AI Hackathon 2026)"
+                  className="w-full px-3 py-2 bg-white border border-border-soft rounded-lg text-xs text-ink focus:outline-none focus:ring-2 focus:ring-sage"
+                />
+                <input
+                  type="date"
+                  value={hackDate}
+                  onChange={e => setHackDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-border-soft rounded-lg text-xs text-ink focus:outline-none focus:ring-2 focus:ring-sage"
+                />
+                <select
+                  value={hackRole}
+                  onChange={e => setHackRole(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-border-soft rounded-lg text-xs text-ink focus:outline-none focus:ring-2 focus:ring-sage"
+                >
+                  <option value="Lead Developer">Lead Developer</option>
+                  <option value="AI Engineer">AI Engineer</option>
+                  <option value="Full Stack Developer">Full Stack Developer</option>
+                  <option value="Product Architect">Product Architect</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <select
+                  value={hackPlacement}
+                  onChange={e => setHackPlacement(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-border-soft rounded-lg text-xs text-ink focus:outline-none focus:ring-2 focus:ring-sage"
+                >
+                  <option value="Winner (1st Place)">Winner (1st Place) (+15 pts)</option>
+                  <option value="Runner Up (2nd/3rd)">Runner Up (2nd/3rd) (+10 pts)</option>
+                  <option value="Track Winner">Track Winner (+10 pts)</option>
+                  <option value="Finalist">Finalist (+10 pts)</option>
+                </select>
+                <input
+                  type="text"
+                  value={hackSkills}
+                  onChange={e => setHackSkills(e.target.value)}
+                  placeholder="Skills (comma separated)"
+                  className="w-full px-3 py-2 bg-white border border-border-soft rounded-lg text-xs text-ink focus:outline-none focus:ring-2 focus:ring-sage"
+                />
+              </div>
+              <textarea
+                value={hackDesc}
+                onChange={e => setHackDesc(e.target.value)}
+                rows={2}
+                placeholder="Briefly describe what you built and your technical impact..."
+                className="w-full px-3 py-2 bg-white border border-border-soft rounded-lg text-xs text-ink resize-none focus:outline-none focus:ring-2 focus:ring-sage"
+              />
+              <button
+                type="submit"
+                disabled={analyzingHackathon}
+                className="w-full bg-sage text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-sage-dark transition-colors disabled:opacity-50"
+              >
+                {analyzingHackathon ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying with AI...</>
+                ) : (
+                  <><Zap className="w-3.5 h-3.5" /> Save & Analyze Achievement</>
+                )}
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {hackathons.length === 0 ? (
+          <p className="py-6 text-center text-xs text-ink-faint bg-cream rounded-xl border border-dashed border-border-soft">
+            No hackathons or competitions recorded yet. Add your wins above!
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {hackathons.map(h => (
+              <div key={h.id} className="p-4 bg-cream rounded-xl border border-border-soft flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-sm font-bold text-ink">{h.title}</h4>
+                    <span className="px-2 py-0.5 bg-amber/10 text-amber text-[10px] font-bold rounded-full border border-amber/20 flex items-center gap-1">
+                      <Award className="w-3 h-3" /> {h.placement}
+                    </span>
+                    {h.ai_verified && (
+                      <span className="px-2 py-0.5 bg-sage-light text-sage text-[10px] font-bold rounded-full flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" /> AI Verified
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-light mt-1 font-medium">{h.event_name} • <span className="text-ink-faint">{h.role} ({h.date})</span></p>
+                  <p className="text-xs text-ink-faint mt-1.5 leading-relaxed">{h.description}</p>
+                  {h.ai_feedback && (
+                    <p className="mt-2 p-2 bg-white/60 rounded-lg text-[11px] text-ink-light italic border border-border-soft/60">
+                      ✨ {h.ai_feedback}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleRemoveHackathon(h.id)}
+                  className="text-ink-faint hover:text-rose transition-colors p-1"
+                  title="Remove achievement"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.section>
 
       {/* ── Pitch Analyzer Panel ── */}
       <motion.section

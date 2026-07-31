@@ -186,7 +186,7 @@ function AuthenticatedApp() {
         try {
           const res = await axios.get(`/api/github-repos/${ghUser}`);
           if (res.data?.repos) setRepos(res.data.repos);
-        } catch (e) { /* ignore prefetch error */ }
+        } catch { /* ignore prefetch error */ }
       }
     }
 
@@ -203,7 +203,7 @@ function AuthenticatedApp() {
           if (res.data?.success && res.data?.analysis) {
             localStorage.setItem(cacheKey, res.data.analysis);
           }
-        } catch (e) { /* ignore prefetch error */ }
+        } catch { /* ignore prefetch error */ }
       }
     }
   }, [profile, repos.length]);

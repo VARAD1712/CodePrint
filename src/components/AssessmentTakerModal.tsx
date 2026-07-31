@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Clock, ShieldAlert, CheckCircle, XCircle, AlertTriangle, ChevronRight, Award } from 'lucide-react';
 import type { Recruitment, Application, Profile } from '../types';
@@ -50,32 +50,8 @@ export function AssessmentTakerModal({ recruitment, profile, onClose, onApplicat
     };
   }, [currentStep]);
 
-  // Timer
-  useEffect(() => {
-    if (currentStep !== 'testing') return;
-    if (timeLeftSeconds <= 0) {
-      handleFinishTest();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeftSeconds(t => t - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [currentStep, timeLeftSeconds]);
-
-  if (!testConfig) return null;
-
-  const handleStart = () => {
-    setCurrentStep('testing');
-  };
-
-  const handleSelectAnswer = (qId: string, optionIdx: number) => {
-    setSelectedAnswers(prev => ({ ...prev, [qId]: optionIdx }));
-  };
-
-  const handleFinishTest = async () => {
+  const handleFinishTest = useCallback(async () => {
+    if (!testConfig) return;
     let correctCount = 0;
     testConfig.questions.forEach(q => {
       if (selectedAnswers[q.id] === q.correct_index) {
@@ -91,6 +67,31 @@ export function AssessmentTakerModal({ recruitment, profile, onClose, onApplicat
     setScorePercentage(percent);
     setPassed(isPassed);
     setCurrentStep('results');
+  }, [testConfig, selectedAnswers]);
+
+  // Timer
+  useEffect(() => {
+    if (currentStep !== 'testing') return;
+    if (timeLeftSeconds <= 0) {
+      handleFinishTest();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeftSeconds(t => t - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [currentStep, timeLeftSeconds, handleFinishTest]);
+
+  if (!testConfig) return null;
+
+  const handleStart = () => {
+    setCurrentStep('testing');
+  };
+
+  const handleSelectAnswer = (qId: string, optionIdx: number) => {
+    setSelectedAnswers(prev => ({ ...prev, [qId]: optionIdx }));
   };
 
   const handleConfirmSubmission = async () => {

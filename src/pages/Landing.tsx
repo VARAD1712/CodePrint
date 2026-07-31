@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Hero } from '../components/Hero';
 import { FeatureTabs } from '../components/FeatureTabs';
 import { Workflow } from '../components/Workflow';
@@ -17,7 +17,7 @@ export function Landing() {
   const [backendStatus, setBackendStatus] = useState<string>('Checking backend...');
   const navigate = useNavigate();
 
-  const redirectByRole = async (uid: string, retries = 3) => {
+  const redirectByRole = useCallback(async (uid: string, retries = 3) => {
     const activeRole = localStorage.getItem('codeprint_active_role');
     if (activeRole === 'company' || activeRole === 'student') {
       navigate(activeRole === 'company' ? '/company/dashboard' : '/home');
@@ -30,7 +30,7 @@ export function Landing() {
     }
     const role = (data?.role as UserRole) || 'student';
     navigate(role === 'company' ? '/company/dashboard' : '/home');
-  };
+  }, [navigate]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -45,7 +45,7 @@ export function Landing() {
       .catch(() => setBackendStatus('Backend unavailable'));
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, redirectByRole]);
 
   const handleAuthSuccess = (role: UserRole) => {
     localStorage.setItem('codeprint_active_role', role);

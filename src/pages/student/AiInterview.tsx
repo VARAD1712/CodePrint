@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, Send, Bot, User, CheckCircle2, Award, Sparkles, RefreshCw } from 'lucide-react';
+import { Send, Bot, User, CheckCircle2, Award, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import type { Profile } from '../../types';
 

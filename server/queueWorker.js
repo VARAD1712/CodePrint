@@ -53,7 +53,7 @@ async function processNextJobs() {
     for (const job of jobs) {
       await processSingleJob(job);
     }
-  } catch (err) {
+  } catch {
     // Silent catch for resilience during network hiccups or offline dev
   }
 }
@@ -162,7 +162,7 @@ async function handleAiFraudCheck(payload) {
  * Handler: Nightly GitHub Skill Decay & Freshness Re-sync
  * Scans all connected profiles and updates freshness weights and velocity factors.
  */
-async function handleNightlyGithubSync(payload) {
+async function handleNightlyGithubSync(_payload) {
   const { data: profiles, error } = await supabase
     .from('profiles')
     .select('id, github_username, talent_score')
@@ -194,7 +194,7 @@ async function handleNightlyGithubSync(payload) {
  * Handler: Automated Recruiter Saved Search & Match Alerts
  * Evaluates candidate profile updates against recruiter saved searches and generates notifications.
  */
-async function handleSavedSearchAlerts(payload = {}) {
+async function handleSavedSearchAlerts(_payload = {}) {
   try {
     const { data: recruiters } = await supabase
       .from('profiles')

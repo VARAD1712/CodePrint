@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { TalentScoreRing } from '../components/TalentScoreRing';
 import { ImprovementSuggestions } from '../components/ImprovementSuggestions';
 import { ScoreBreakdown } from '../components/ScoreBreakdown';

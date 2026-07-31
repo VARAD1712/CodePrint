@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Check, X, ExternalLink, Calendar, MessageSquare, ChevronDown, ChevronUp, Search, Sparkles, CheckCircle2, ShieldCheck, Columns, List, ArrowRight, ArrowLeft as ArrowLeftIcon, Briefcase, Clock } from 'lucide-react';
 import { supabase } from '../../services/supabase';
@@ -42,28 +42,7 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
   const [timelineApp, setTimelineApp] = useState<ApplicantRow | null>(null);
 
 
-  useEffect(() => {
-    loadApplicants();
-
-    // Supabase Realtime automatic subscription for incoming applications and updates
-    const channel = supabase
-      .channel('company_applicants_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
-        loadApplicants();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile.id]);
-
-  const showNotification = (msg: string) => {
-    setNotificationMsg(msg);
-    setTimeout(() => setNotificationMsg(null), 4000);
-  };
-
-  const loadApplicants = async () => {
+  const loadApplicants = useCallback(async () => {
     setLoading(true);
     const data = await recruitmentService.getApplications({ companyId: profile.id });
     const sorted = data.sort((a, b) => (b.ai_match_score || 0) - (a.ai_match_score || 0));
@@ -88,6 +67,27 @@ export function CompanyApplicants({ profile }: CompanyApplicantsProps) {
     setInterviewDates(initialDates);
     
     setLoading(false);
+  }, [profile.id]);
+
+  useEffect(() => {
+    loadApplicants();
+
+    // Supabase Realtime automatic subscription for incoming applications and updates
+    const channel = supabase
+      .channel('company_applicants_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
+        loadApplicants();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile.id, loadApplicants]);
+
+  const showNotification = (msg: string) => {
+    setNotificationMsg(msg);
+    setTimeout(() => setNotificationMsg(null), 4000);
   };
 
   const handleStageChange = async (app: ApplicantRow, targetStage: PipelineStage) => {

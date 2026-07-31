@@ -82,7 +82,7 @@ export function CandidateDiscovery() {
           if (analysisRes.data?.analysis) {
             found.recruiter_analysis = analysisRes.data.analysis;
           }
-        } catch (err) {
+        } catch {
           // ignore minor AI timeout
         }
 

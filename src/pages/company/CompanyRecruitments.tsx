@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Loader2, Users, Sparkles, Briefcase, Calendar, Sliders, X, Brain, HelpCircle } from 'lucide-react';
-import { supabase } from '../../services/supabase';
 import { recruitmentService } from '../../services/recruitmentService';
 import type { Profile, Recruitment, MockQuestion } from '../../types';
 
@@ -38,11 +37,7 @@ export function CompanyRecruitments({ profile }: CompanyRecruitmentsProps) {
 
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    loadRecruitments();
-  }, [profile.id]);
-
-  const loadRecruitments = async () => {
+  const loadRecruitments = useCallback(async () => {
     setLoading(true);
     const jobs = await recruitmentService.getRecruitments(profile.id);
     const withCounts = await Promise.all(
@@ -53,7 +48,11 @@ export function CompanyRecruitments({ profile }: CompanyRecruitmentsProps) {
     );
     setRecruitments(withCounts);
     setLoading(false);
-  };
+  }, [profile.id]);
+
+  useEffect(() => {
+    loadRecruitments();
+  }, [profile.id, loadRecruitments]);
 
   const handleAddCustomQuestion = () => {
     const q: MockQuestion = {

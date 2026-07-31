@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, User, FolderGit2, FileText, Settings, LogOut, Menu, X, ChevronRight,
-  Home, Users, Briefcase, ArrowLeft, ArrowRight, Award, Building2, Sparkles, Zap, Search, Command
+  Home, Users, Briefcase, Award, Building2, Sparkles, Zap, Search, Command
 } from 'lucide-react';
 import { auth } from '../services/firebase';
 import { NotificationsBell } from './NotificationsBell';

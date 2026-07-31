@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Target, BookOpen, TrendingUp, Sparkles, Code2, Briefcase } from 'lucide-react';
+import { Target, BookOpen, TrendingUp, Sparkles, Code2, Briefcase } from 'lucide-react';
 import axios from 'axios';
 import type { Profile } from '../../types';
 

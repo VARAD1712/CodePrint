@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Rocket, Code, Clock, ExternalLink, Send, Sparkles, ShieldCheck, Loader2, Award } from 'lucide-react';
+import { Rocket, Code, Clock, ExternalLink, Send, Sparkles, ShieldCheck, Loader2, Award } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import axios from 'axios';
-import type { Profile, HackathonSubmission } from '../types';
+import type { Profile } from '../types';
 import { GithubIcon } from '../components/BrandIcons';
 import { OneClickHireModal } from '../components/OneClickHireModal';
 
@@ -77,16 +77,7 @@ export function HackathonHub({ role = 'student' }: HackathonHubProps) {
   // One-Click Hire State
   const [hiringCandidate, setHiringCandidate] = useState<Profile | null>(null);
 
-  useEffect(() => {
-    loadCurrentUser();
-    if (role === 'company') {
-      loadLeaderboard();
-    } else {
-      setLoading(false);
-    }
-  }, [activeHackathon, role]);
-
-  const loadCurrentUser = async () => {
+  const loadCurrentUser = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -97,9 +88,9 @@ export function HackathonHub({ role = 'student' }: HackathonHubProps) {
         }
       }
     }
-  };
+  }, []);
 
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`/api/hackathons/${activeHackathon.id}/leaderboard`);
@@ -133,7 +124,16 @@ export function HackathonHub({ role = 'student' }: HackathonHubProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeHackathon.id]);
+
+  useEffect(() => {
+    loadCurrentUser();
+    if (role === 'company') {
+      loadLeaderboard();
+    } else {
+      setLoading(false);
+    }
+  }, [activeHackathon, role, loadCurrentUser, loadLeaderboard]);
 
   const handleUploadCertificate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +146,7 @@ export function HackathonHub({ role = 'student' }: HackathonHubProps) {
       try {
         const fileExt = certFile.name.split('.').pop();
         const fileName = `${userProfile?.id || 'anon'}_${Date.now()}.${fileExt}`;
-        const { data, error } = await supabase.storage.from('certificates').upload(fileName, certFile);
+        const { data } = await supabase.storage.from('certificates').upload(fileName, certFile);
         if (data) {
           const { data: publicData } = supabase.storage.from('certificates').getPublicUrl(fileName);
           uploadedUrl = publicData.publicUrl;

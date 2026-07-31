@@ -110,7 +110,7 @@ export function CandidateMatchEngine({ candidate, onBack }: CandidateMatchEngine
         read: false,
       });
       setAtsStatus('Candidate successfully advanced to ATS Screening Stage & notified!');
-    } catch (e) {
+    } catch {
       setAtsStatus('Candidate marked for ATS promotion!');
     } finally {
       setIsPromoting(false);

@@ -138,7 +138,7 @@ export async function fetchGithubRepos(username: string): Promise<any[]> {
     }
     throw new Error('Invalid repos array');
   } catch (error) {
-    console.warn('[GithubService] Falling back to prototype repo telemetry.');
+    console.warn('[GithubService] Falling back to prototype repo telemetry:', error);
     const cleanUser = username.trim() || 'developer';
     return [
       { id: 1, name: 'enterprise-microservices-core', description: 'Scalable cloud architecture and event-driven data pipeline constructed with high fault-tolerance.', stars: 24, language: 'TypeScript', html_url: `https://github.com/${cleanUser}/enterprise-microservices-core` },

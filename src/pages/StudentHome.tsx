@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Briefcase, Loader2, CheckCircle2, Brain, ArrowRight } from 'lucide-react';
 import { recruitmentService } from '../services/recruitmentService';
@@ -28,11 +28,7 @@ export function StudentHome({ profile }: StudentHomeProps) {
   const [selectedCompany, setSelectedCompany] = useState<CompanyProfileData | null>(null);
   const [activeAssessmentJob, setActiveAssessmentJob] = useState<Recruitment | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [profile.id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const [jobs, apps] = await Promise.all([
       recruitmentService.getRecruitments(),
@@ -42,7 +38,11 @@ export function StudentHome({ profile }: StudentHomeProps) {
     setRecruitments(jobs.filter(j => j.status === 'open'));
     setApplications(apps);
     setLoading(false);
-  };
+  }, [profile.id]);
+
+  useEffect(() => {
+    loadData();
+  }, [profile.id, loadData]);
 
   const getApplication = (recruitmentId: string) =>
     applications.find(a => a.recruitment_id === recruitmentId);

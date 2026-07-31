@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Briefcase, TrendingUp, Sparkles, ArrowRight, Clock, ShieldCheck, BarChart3, PieChart, Target, Download, CheckCircle2, Award, Zap } from 'lucide-react';
+import { Users, Briefcase, TrendingUp, ArrowRight, Clock, ShieldCheck, BarChart3, PieChart, Target, Download, CheckCircle2, Award, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { apiClient } from '../../services/apiClient';
@@ -31,31 +31,7 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadStats();
-    loadAnalytics();
-
-    // Supabase Realtime automatic sync when student applies or status updates
-    const channel = supabase
-      .channel('company_dashboard_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
-        loadStats();
-        loadAnalytics();
-        showToast('Live Alert: New candidate application activity detected!');
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile.id]);
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 4000);
-  };
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     const recs = await recruitmentService.getRecruitments(profile.id);
     const apps = await recruitmentService.getApplications({ companyId: profile.id });
 
@@ -65,9 +41,9 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
       pending: apps.filter(a => a.status === 'pending').length,
       aiScoreAvg: apps.length > 0 ? Math.round(apps.reduce((acc, a) => acc + (a.ai_match_score || 85), 0) / apps.length) : 89
     });
-  };
+  }, [profile.id]);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       const res = await apiClient.get<AnalyticsData>(`/api/analytics/recruiter/${profile.id}`);
       if (res.data) {
@@ -113,6 +89,30 @@ export function CompanyDashboard({ profile }: CompanyDashboardProps) {
       ],
       conversion_rate: 16.7
     });
+  }, [profile.id]);
+
+  useEffect(() => {
+    loadStats();
+    loadAnalytics();
+
+    // Supabase Realtime automatic sync when student applies or status updates
+    const channel = supabase
+      .channel('company_dashboard_updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
+        loadStats();
+        loadAnalytics();
+        showToast('Live Alert: New candidate application activity detected!');
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile.id, loadStats, loadAnalytics]);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
   };
 
   const handleExportReport = () => {
