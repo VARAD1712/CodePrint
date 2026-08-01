@@ -2215,31 +2215,38 @@ app.get('/api/recruiter/saved-searches/:id', async (req, res) => {
 // Start Server (Express v5 returns a Promise — must await)
 // ---------------------------------------------------------
 
-(async () => {
-  try {
-    await app.listen(PORT);
-    console.log(`\n🚀 Backend Server running on http://localhost:${PORT}`);
-    console.log(`👉 Available endpoints:`);
-    console.log(`   GET   /api/health`);
-    console.log(`   GET   /api/candidates/:id`);
-    console.log(`   POST  /api/analyze-github`);
-    console.log(`   POST  /api/analyze-pitch`);
-    console.log(`   GET   /api/github-repos/:username`);
-    console.log(`   POST  /api/analyze-profile`);
-    console.log(`   POST  /api/generate-resume`);
-    console.log(`   POST  /api/career-guidance             (✨ AI Career Advisor)`);
-    console.log(`   POST  /api/manus-audit                 (✨ New: Manus AI Agent)`);
-    console.log(`   POST  /api/ai-execute                  (✨ New: Multi-Provider Router)`);
-    console.log(`\n📊 GitHub API:     ${process.env.GITHUB_API_KEY ? '✅ Authenticated (5000 req/hr)' : '⚠️ Unauthenticated (60 req/hr)'}`);
-    console.log(`🤖 OpenAI API:     ${process.env.OPENAI_API_KEY ? '✅ Configured' : '⚠️ Not configured (simulated responses)'}`);
-    console.log(`🧠 Anthropic API:  ${process.env.ANTHROPIC_API_KEY ? '✅ Configured' : '⚠️ Not configured'}`);
-    console.log(`🤖 Manus AI Agent: ${process.env.MANUS_API_KEY && !process.env.MANUS_API_KEY.includes('your-manus-ai') ? '✅ Configured (Autonomous Verification)' : '⚠️ Not configured (simulated autonomous agent)'}\n`);
-    
-    // Initialize AI background job queue worker
-    initQueueWorker(supabase);
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-})();
+if (!process.env.VERCEL) {
+  (async () => {
+    try {
+      await app.listen(PORT);
+      console.log(`\n🚀 Backend Server running on http://localhost:${PORT}`);
+      console.log(`👉 Available endpoints:`);
+      console.log(`   GET   /api/health`);
+      console.log(`   GET   /api/candidates/:id`);
+      console.log(`   POST  /api/analyze-github`);
+      console.log(`   POST  /api/analyze-pitch`);
+      console.log(`   GET   /api/github-repos/:username`);
+      console.log(`   POST  /api/analyze-profile`);
+      console.log(`   POST  /api/generate-resume`);
+      console.log(`   POST  /api/career-guidance             (✨ AI Career Advisor)`);
+      console.log(`   POST  /api/manus-audit                 (✨ New: Manus AI Agent)`);
+      console.log(`   POST  /api/ai-execute                  (✨ New: Multi-Provider Router)`);
+      console.log(`\n📊 GitHub API:     ${process.env.GITHUB_API_KEY ? '✅ Authenticated (5000 req/hr)' : '⚠️ Unauthenticated (60 req/hr)'}`);
+      console.log(`🤖 OpenAI API:     ${process.env.OPENAI_API_KEY ? '✅ Configured' : '⚠️ Not configured (simulated responses)'}`);
+      console.log(`🧠 Anthropic API:  ${process.env.ANTHROPIC_API_KEY ? '✅ Configured' : '⚠️ Not configured'}`);
+      console.log(`🤖 Manus AI Agent: ${process.env.MANUS_API_KEY && !process.env.MANUS_API_KEY.includes('your-manus-ai') ? '✅ Configured (Autonomous Verification)' : '⚠️ Not configured (simulated autonomous agent)'}\n`);
+      
+      // Initialize AI background job queue worker
+      initQueueWorker(supabase);
+    } catch (err) {
+      console.error('Failed to start server:', err);
+      process.exit(1);
+    }
+  })();
+} else {
+  // On Vercel serverless environment, initialize worker on cold start
+  initQueueWorker(supabase);
+}
+
+export default app;
 
