@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Rocket, Code, Clock, ExternalLink, Send, Sparkles, ShieldCheck, Loader2, Award } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import axios from 'axios';
-import type { Profile } from '../types';
+import type { Profile, LeaderboardEntry } from '../types';
 import { GithubIcon } from '../components/BrandIcons';
 import { OneClickHireModal } from '../components/OneClickHireModal';
 

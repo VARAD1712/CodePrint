@@ -464,7 +464,7 @@ app.post('/api/analyze-pitch', async (req, res) => {
           ? 'Clear formulation of problem statement and solution design with concise articulation.' 
           : 'Consider defining the core user pain points more explicitly before detailing technical features.',
         technicalDepth: foundKeywords.includes('architecture') || foundKeywords.includes('scale')
-          ? `Strong architectural foresight (${foundKeywords.filter(k => ['ai', 'cloud', 'security', 'architecture', 'scale'].includes(k)).slice(0, 3).join(', ' || 'tech')}) demonstrating production scalability.`
+          ? `Strong architectural foresight (${foundKeywords.filter(k => ['ai', 'cloud', 'security', 'architecture', 'scale'].includes(k)).slice(0, 3).join(', ') || 'tech'}) demonstrating production scalability.`
           : 'High-level business overview is clear; recommend incorporating deeper infrastructure and latency benchmarks.',
         clarity: words < 50 
           ? 'Pitch is concise but slightly brief. Adding unit economics or go-to-market strategy will bolster investor confidence.'
@@ -1552,7 +1552,7 @@ app.post('/api/recruiter/universal-search', async (req, res) => {
     }
 
     // Fallback synthetic LinkedIn shell or general match guidance
-    const syntheticName = cleanQuery.replace(/.*linkedin\.com\/in\//i, '').replace(/[\/\-_]/g, ' ').toUpperCase() || 'EXTERNAL TALENT';
+    const syntheticName = cleanQuery.replace(/.*linkedin\.com\/in\//i, '').replace(/[/\-_]/g, ' ').toUpperCase() || 'EXTERNAL TALENT';
     return res.json({
       found: true,
       type: 'unclaimed_shell',

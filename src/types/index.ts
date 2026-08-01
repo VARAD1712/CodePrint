@@ -138,6 +138,7 @@ export interface GitHubFreshness {
   commitVelocity: number;
   decayMultiplier: number;
   isCapped: boolean;
+  activeRecently?: boolean;
 }
 
 export interface ScoreExplanationItem {
@@ -157,13 +158,13 @@ export interface ScoreExplainability {
 }
 
 export interface GitHubResult {
-  username: string;
+  username?: string;
   talentScore: number;
-  breakdown: ScoreBreakdown;
-  stats: GitHubStats;
+  breakdown?: ScoreBreakdown;
+  stats?: GitHubStats;
   freshness?: GitHubFreshness | null;
   explainability?: ScoreExplainability | null;
-  avatarUrl: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface AiProfileSummary {
@@ -319,6 +320,10 @@ export interface HackathonSubmission {
   innovation_rationale?: string;
   combined_score?: number;
   submitted_at: string;
+}
+
+export interface LeaderboardEntry extends HackathonSubmission {
+  student?: Profile;
 }
 
 export interface HackathonEvent {

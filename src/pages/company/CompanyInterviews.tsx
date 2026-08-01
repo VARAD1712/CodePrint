@@ -200,7 +200,7 @@ export function CompanyInterviews(_props: CompanyInterviewsProps) {
                         <Video className="w-5 h-5 text-ink-faint" /> Interview Transcript
                       </h3>
                       <div className="space-y-4 bg-cream-dark/30 p-4 rounded-xl border border-border">
-                        {inv.transcript.map((msg, idx) => (
+                        {inv.transcript.map((msg: any, idx: number) => (
                           <div key={idx} className={`flex flex-col ${msg.speaker === 'AI' ? 'items-start' : 'items-end'}`}>
                             <span className="text-xs font-bold text-ink-faint mb-1">{msg.speaker}</span>
                             <div className={`px-4 py-2 rounded-2xl max-w-[85%] text-sm ${

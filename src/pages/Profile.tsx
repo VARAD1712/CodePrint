@@ -23,7 +23,7 @@ const languageColors: Record<string, string> = {
 
 interface ProfileProps {
   profile: any;
-  setProfile: (p: any) => void;
+  setProfile: (p: any | ((prev: any) => any)) => void;
   githubResult: any;
   setGithubResult: (r: any) => void;
   linkedinUrl: string;
@@ -187,7 +187,7 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
       ai_profile_score: overallScore,
       ai_profile_summary: summaryData,
     });
-    setProfile(prev => ({
+    setProfile((prev: any) => ({
       ...prev,
       ai_profile_score: overallScore,
       ai_profile_summary: summaryData,
@@ -412,7 +412,7 @@ export function Profile({ profile, setProfile, githubResult, setGithubResult, li
         github_explainability: result.explainability || null,
         avatar_url: result.avatarUrl
       };
-      setProfile(prev => ({ ...prev, ...updatedData }));
+      setProfile((prev: any) => ({ ...prev, ...updatedData }));
       onProfileAnalyzed?.(updatedData);
 
       await runFullProfileAnalysis(

@@ -1,39 +1,13 @@
 import axios from 'axios';
+import type { ScoreBreakdown, GitHubStats, GitHubFreshness, ScoreExplainability } from '../types';
 
 export interface GithubAnalysisResult {
   talentScore: number;
-  breakdown?: {
-    productivity: number;
-    impact: number;
-    diversity: number;
-    recency: number;
-    community: number;
-  };
-  stats?: {
-    repos: number;
-    followers: number;
-    stars: number;
-    languages: string[];
-  };
-  freshness?: {
-    daysSinceLastPush: number;
-    activeRecently: boolean;
-    commitVelocity: number;
-  };
-  explainability?: {
-    summary?: string;
-    reasons?: Array<{
-      category: string;
-      impact: 'positive' | 'negative' | 'neutral';
-      title: string;
-      explanation: string;
-      recommendation: string;
-    }>;
-    scoreRationale?: string;
-    strengths?: string[];
-    actionableSteps?: string[];
-  };
-  avatarUrl?: string;
+  breakdown?: ScoreBreakdown;
+  stats?: GitHubStats;
+  freshness?: GitHubFreshness | null;
+  explainability?: ScoreExplainability | null;
+  avatarUrl?: string | null;
   username?: string;
 }
 
@@ -65,11 +39,17 @@ function getFallbackAnalysis(username: string): GithubAnalysisResult {
       followers,
       stars,
       languages,
+      forks: Math.floor(stars / 4),
+      accountAgeDays: 730 + (hash % 500),
+      recentCommits: 20 + (hash % 50),
     },
     freshness: {
       daysSinceLastPush: 1 + (hash % 5),
       activeRecently: true,
       commitVelocity: Number((2.5 + (hash % 30) / 10).toFixed(1)),
+      status: 'Active & Current',
+      decayMultiplier: 1.0,
+      isCapped: false,
     },
     explainability: {
       summary: `AI syntactic telemetry verifies @${username} as an authoritative contributor exhibiting resilient architectural structuring across ${languages.slice(0, 2).join(' and ')}, disciplined Git commit cadence, and consistent software problem-solving capabilities.`,

@@ -297,7 +297,7 @@ export function Portfolio({ profile, setProfile, githubRepos = [] }: PortfolioPr
 
               <p className="text-sm text-gray-300 leading-relaxed font-medium">
                 {profile.github_explainability?.scoreRationale ||
-                 profile.ai_profile_summary ||
+                 profile.ai_profile_summary?.summary ||
                  `AI syntax telemetry verifies @${profile.github_username || profile.email?.split('@')[0] || 'candidate'} as an adaptable developer exhibiting clean modular architectures, disciplined version control cadence, and consistent technical problem-solving capabilities across modern application stacks.`}
               </p>
 
