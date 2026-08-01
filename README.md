@@ -121,28 +121,4 @@ You'll need environment variables for Supabase, Firebase Authentication, and the
 
 *Codeprint — verifying developer talent through evidence, not claims.*
 
-
-📁 Key Project Files
-CodePrint-main/
-├── src/
-│   ├── pages/
-│   │   ├── company/
-│   │   │   ├── ResumeScreening.tsx      # AI Resume Screening & Job Creation UI
-│   │   │   ├── CompanyDashboard.tsx     # Recruiter Command Console
-│   │   │   ├── CompanyApplicants.tsx    # ATS Kanban & Application Pipeline
-│   │   │   ├── CandidateDiscovery.tsx   # Recruiter Copilot Search
-│   │   │   └── PitchAnalysis.tsx        # Pitch Deck Analyzer
-│   │   ├── student/                     # Student-facing pages (Career, Interview, etc.)
-│   │   ├── Landing.tsx                  # Public Landing Page
-│   │   └── Dashboard.tsx                # Student Dashboard
-│   ├── services/
-│   │   ├── apiClient.ts                 # Axios instance with JWT interceptors
-│   │   └── supabase.ts                  # Supabase client setup
-│   └── App.tsx                          # Core React router & role-based view routing
-├── server/
-│   ├── index.js                         # Express backend API routes (Resumes, Jobs, OpenAI, Matching)
-│   └── uploads/                         # Storage directory for uploaded resumes & pitch decks
-├── supabase/
-│   ├── schema.sql                       # Complete Postgres schema (resumes, job_postings, matches, pgvector)
-│   └── migrations/                      # Incremental SQL migration scripts
 └── package.json
